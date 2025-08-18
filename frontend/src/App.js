@@ -22,6 +22,7 @@ function App() {
         <Route path="/parent" element={<ParentDashboard />} />
         <Route path="/guardian" element={<GuardianDashboard />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route path="/recordings" element={<RecordingsLibraryPage />} />
         <Route path="/books" element={<BookSelectionPage />} />
       </Routes>
