@@ -6,9 +6,11 @@ function Header() {
     <header className="app-header">
       <h1>Aunt Mary’s Storybook Portal</h1>
       <nav>
-        <Link to="/" className="link">Home</Link> |{' '}
-        <Link to="/volunteer" className="link">Volunteer Dashboard</Link> |{' '}
-        <Link to="/admin" className="link">Admin Dashboard</Link>
+        <Link to="/">Home</Link> |{' '}
+        <Link to="/volunteer">Volunteer Dashboard</Link> |{' '}
+        <Link to="/admin">Admin Dashboard</Link>
+        <Link to="/parent">Parent Dashboard</Link>
+        <Link to="/guardian">Guardian Dashboard</Link>
       </nav>
     </header>
   );
