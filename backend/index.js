@@ -1,8 +1,8 @@
 const express = require('express');
+const path = require('path');
 const multer = require('multer');
 const upload = multer({ dest: path.join(__dirname, "uploads") });
 const fs = require('fs');
-const path = require('path');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const app = express();
@@ -10,11 +10,12 @@ const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'mysecretkey';
 const USERS_FILE = path.join(__dirname, 'users.json');
 const RECORDINGS_FILE = path.join(__dirname, 'recordings.json');
-const RATINGS_FILE    = path.join(__dirname, 'ratings.json');
+const RATINGS_FILE = path.join(__dirname, 'ratings.json');
 const SCHEDULES_FILE  = path.join(__dirname, 'schedules.json');
-const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
-res.json({ token, role: user.role, id: user.id });
 
+if (!fs.existsSync(RECORDINGS_FILE)) writeJson(RECORDINGS_FILE, []);
+if (!fs.existsSync(RATINGS_FILE)) writeJson(RATINGS_FILE, []);
+if (!fs.existsSync(SCHEDULES_FILE)) writeJson(SCHEDULES_FILE, []);
 
 app.use(express.json());
 
@@ -64,26 +65,19 @@ function authenticateToken(req, res, next) {
   });
 }
 
-if (!fs.existsSync(RECORDINGS_FILE)) writeJson(RECORDINGS_FILE, []);
-if (!fs.existsSync(RATINGS_FILE))    writeJson(RATINGS_FILE, []);
-if (!fs.existsSync(SCHEDULES_FILE))  writeJson(SCHEDULES_FILE, []);
-
 app.post('/api/ratings', authenticateToken, (req, res) => {
   if (req.user.role !== 'parent') {
     return res.status(403).json({ message: 'Only parents can submit ratings' });
   }
-
-  const { recording, rating, comment } = req.body;
-  if (!recording || !rating) {
-    return res.status(400).json({ message: 'Missing data' });
-  }
+  const { recording, rating, comment, volunteerId } = req.body;
+  if (!recording || !rating) return res.status(400).json({ message: 'Missing data' });
   const ratings = readJson(RATINGS_FILE);
   ratings.push({
     recording,
     rating,
     comment,
     userId: req.user.id,
-    volunteerId: req.body.volunteerId,
+    volunteerId,
     date: new Date().toISOString(),
   });
   writeJson(RATINGS_FILE, ratings);
