@@ -9,9 +9,9 @@ const app = express();
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'mysecretkey';
 const USERS_FILE = path.join(__dirname, 'users.json');
-const RATINGS_FILE = path.join(__dirname, 'ratings.json');
-const RECORDINGS_FILE = path.join(__dirname, "recordings.json");
-const SCHEDULES_FILE = path.join(__dirname, 'schedules.json');
+const RECORDINGS_FILE = path.join(__dirname, 'recordings.json');
+const RATINGS_FILE    = path.join(__dirname, 'ratings.json');
+const SCHEDULES_FILE  = path.join(__dirname, 'schedules.json');
 const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
 res.json({ token, role: user.role, id: user.id });
 
@@ -49,9 +49,7 @@ app.post('/api/login', async (req, res) => {
   if (!user || !(await bcrypt.compare(password, user.password))) {
     return res.status(401).json({ message: 'Invalid credentials' });
   }
-  const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, {
-    expiresIn: '1h',
-  });
+  const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
   res.json({ token, role: user.role, id: user.id });
 });
 
@@ -66,9 +64,9 @@ function authenticateToken(req, res, next) {
   });
 }
 
-if (!fs.existsSync(RATINGS_FILE)) writeJson(RATINGS_FILE, []);
 if (!fs.existsSync(RECORDINGS_FILE)) writeJson(RECORDINGS_FILE, []);
-if (!fs.existsSync(SCHEDULES_FILE)) writeJson(SCHEDULES_FILE, []);
+if (!fs.existsSync(RATINGS_FILE))    writeJson(RATINGS_FILE, []);
+if (!fs.existsSync(SCHEDULES_FILE))  writeJson(SCHEDULES_FILE, []);
 
 app.post('/api/ratings', authenticateToken, (req, res) => {
   if (req.user.role !== 'parent') {
