@@ -10,10 +10,10 @@ import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 
 function RecordingsLibraryPage() {
+    const { user } = useContext(AuthContext);
     const [files, setFiles] = useState([]);
     const [ratings, setRatings] = useState({});
     const [comments, setComments] = useState({});
-    const { user } = useContext(AuthContext);
 
     useEffect(() => {
         fetch('http://localhost:4000/api/recordings', {
@@ -25,7 +25,6 @@ function RecordingsLibraryPage() {
     }, [user]);
 
     const submitRating = async (fileId) => {
-        if (!user) return;
         const rating = ratings[fileId];
         const comment = comments[fileId];
         await fetch('http://localhost:4000/api/ratings', {
@@ -34,11 +33,16 @@ function RecordingsLibraryPage() {
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${user.token}`,
             },
-            body: JSON.stringify({ recording: fileId, rating, comment }),
+            body: JSON.stringify({
+                recording: fileId,
+                rating,
+                comment,
+                volunteerId: files.find((f) => f.id === fileId)?.volunteerId,
+            }),
         });
-        alert('Rating submitted');
         setRatings((prev) => ({ ...prev, [fileId]: '' }));
         setComments((prev) => ({ ...prev, [fileId]: '' }));
+        alert('Rating submitted');
     };
 
     return (
@@ -70,10 +74,7 @@ function RecordingsLibraryPage() {
                                         inputProps={{ min: 1, max: 5 }}
                                         value={ratings[file.id] || ''}
                                         onChange={(e) =>
-                                            setRatings((prev) => ({
-                                                ...prev,
-                                                [file.id]: e.target.value,
-                                            }))
+                                            setRatings((prev) => ({ ...prev, [file.id]: e.target.value }))
                                         }
                                     />
                                 </TableCell>
@@ -82,10 +83,7 @@ function RecordingsLibraryPage() {
                                         size="small"
                                         value={comments[file.id] || ''}
                                         onChange={(e) =>
-                                            setComments((prev) => ({
-                                                ...prev,
-                                                [file.id]: e.target.value,
-                                            }))
+                                            setComments((prev) => ({ ...prev, [file.id]: e.target.value }))
                                         }
                                     />
                                 </TableCell>
@@ -100,7 +98,6 @@ function RecordingsLibraryPage() {
                                 </TableCell>
                             </TableRow>
                         ))}
-
                     </TableBody>
                 </Table>
             )}

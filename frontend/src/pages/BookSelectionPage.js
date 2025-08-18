@@ -1,12 +1,10 @@
 import React from 'react';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import TableBody from '@mui/material/TableBody';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
+import Table from '@mui/material.Table';
+import TableHead from '@mui/material/TableHead';
+import TableBody from '@mui/material.TableBody';
+import TableRow from '@mui/material.TableRow';
+import TableCell from '@mui.material.TableCell';
 
 const books = [
     { title: 'Goodnight Moon', author: 'Margaret Wise Brown' },
@@ -16,16 +14,25 @@ const books = [
 
 function BookSelectionPage() {
     return (
-        <div>
+        <Paper style={{ padding: 20 }}>
             <h2>Book Selection</h2>
-            <ul>
-                {books.map((book) => (
-                    <li key={book.title}>
-                        <strong>{book.title}</strong> by {book.author}
-                    </li>
-                ))}
-            </ul>
-        </div>
+            <Table>
+                <TableHead>
+                    <TableRow>
+                        <TableCell>Title</TableCell>
+                        <TableCell>Author</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    {books.map((book, idx) => (
+                        <TableRow key={idx}>
+                            <TableCell>{book.title}</TableCell>
+                            <TableCell>{book.author}</TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </Paper>
     );
 }
 

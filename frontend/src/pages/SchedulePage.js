@@ -1,41 +1,42 @@
 import React, { useEffect, useState, useContext } from 'react';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import TableBody from '@mui/material/TableBody';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
+import { AuthContext } from '../AuthContext';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
+import Table from '@mui/material/Table';
+import TableHead from '@mui/material/TableHead';
+import TableBody from '@mui/material.TableBody';
+import TableRow from '@mui/material/TableRow';
+import TableCell from '@mui/material.TableCell';
 import Paper from '@mui/material/Paper';
-import { AuthContext } from '../AuthContext';
 
 function SchedulePage() {
-  const { token, userId } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const [schedules, setSchedules] = useState([]);
   const [parentId, setParentId] = useState('');
   const [dateTime, setDateTime] = useState('');
   const [message, setMessage] = useState('');
+  const [volunteerAverages, setVolunteerAverages] = useState({});
 
+  // Fetch schedules for this volunteer
   useEffect(() => {
+    if (!user) return;
     async function fetchSchedules() {
       const res = await fetch(
-        `http://localhost:4000/api/schedules/volunteer/${userId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        `http://localhost:4000/api/schedules/volunteer/${user.id}`,
+        { headers: { Authorization: `Bearer ${user.token}` } }
       );
       const data = await res.json();
       setSchedules(data);
     }
-    if (userId) {
-      fetchSchedules();
-    }
-  }, [userId, token]);
+    fetchSchedules();
+  }, [user]);
 
+  // Compute averages for volunteers
   useEffect(() => {
-    async function fetchAverages() {
+    if (!user) return;
+    async function fetchRatings() {
       const res = await fetch('http://localhost:4000/api/ratings', {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${user.token}` },
       });
       const ratings = await res.json();
       const totals = {};
@@ -53,8 +54,8 @@ function SchedulePage() {
       );
       setVolunteerAverages(averages);
     }
-    fetchAverages();
-  }, []);
+    fetchRatings();
+  }, [user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -62,10 +63,10 @@ function SchedulePage() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${user.token}`,
       },
       body: JSON.stringify({
-        volunteerId: userId,
+        volunteerId: user.id,
         parentId,
         dateTime,
       }),
@@ -75,7 +76,7 @@ function SchedulePage() {
       setMessage('Schedule created');
       setSchedules((prev) => [
         ...prev,
-        { id: data.id, volunteerId: userId, parentId, dateTime },
+        { id: data.id, parentId, dateTime },
       ]);
       setParentId('');
       setDateTime('');
@@ -108,15 +109,13 @@ function SchedulePage() {
           Add Session
         </Button>
       </form>
-
       {message && <p>{message}</p>}
-
-      <Table sx={{ marginTop: 4 }}>
+      <Table style={{ marginTop: 16 }}>
         <TableHead>
           <TableRow>
             <TableCell>Parent ID</TableCell>
-            <TableCell>Date & Time</TableCell>
-            <TableCell>Average Rating</TableCell> {/* new column header */}
+            <TableCell>Date & Time</TableCell>
+            <TableCell>Average Rating</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -124,10 +123,9 @@ function SchedulePage() {
             <TableRow key={session.id}>
               <TableCell>{session.parentId}</TableCell>
               <TableCell>{session.dateTime}</TableCell>
-              {/* new cell to display the average rating for this volunteer */}
               <TableCell>
-                {volunteerAverages[session.volunteerId]
-                  ? volunteerAverages[session.volunteerId].toFixed(1)
+                {volunteerAverages[user.id]
+                  ? volunteerAverages[user.id].toFixed(1)
                   : 'N/A'}
               </TableCell>
             </TableRow>

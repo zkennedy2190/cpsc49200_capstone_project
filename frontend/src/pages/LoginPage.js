@@ -3,12 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import TableBody from '@mui/material/TableBody';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 
 function LoginPage() {
@@ -31,18 +25,19 @@ function LoginPage() {
     const data = await res.json();
     if (res.ok) {
       login({ token: data.token, role: data.role, id: data.id });
-      // redirect based on role
+      // redirect by role
       if (data.role === 'parent') navigate('/parent');
       else if (data.role === 'guardian') navigate('/guardian');
       else if (data.role === 'volunteer') navigate('/volunteer');
       else if (data.role === 'admin') navigate('/admin');
+      setForm({ username: '', password: '' });
     } else {
       setMessage(data.message);
     }
   };
 
   return (
-    <div>
+    <Paper style={{ padding: 20 }}>
       <h2>Login</h2>
       <form onSubmit={handleSubmit}>
         <TextField
@@ -67,7 +62,7 @@ function LoginPage() {
         </Button>
       </form>
       {message && <p>{message}</p>}
-    </div>
+    </Paper>
   );
 }
 
