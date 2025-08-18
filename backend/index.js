@@ -1,15 +1,16 @@
 const express = require('express');
 const multer = require('multer');
+const upload = multer({ dest: path.join(__dirname, "uploads") });
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
 const app = express();
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'mysecretkey';
 const USERS_FILE = path.join(__dirname, 'users.json');
 const RATINGS_FILE = path.join(__dirname, 'ratings.json');
+const RECORDINGS_FILE = path.join(__dirname, "recordings.json");
 
 app.use(express.json());
 
@@ -62,6 +63,7 @@ function authenticateToken(req, res, next) {
 }
 
 if (!fs.existsSync(RATINGS_FILE)) writeJson(RATINGS_FILE, []);
+if (!fs.existsSync(RECORDINGS_FILE)) writeJson(RECORDINGS_FILE, []);
 
 app.post('/api/ratings', authenticateToken, (req, res) => {
   const { recording, rating } = req.body;
@@ -70,6 +72,33 @@ app.post('/api/ratings', authenticateToken, (req, res) => {
   ratings.push({ recording, rating, userId: req.user.id, date: new Date().toISOString() });
   writeJson(RATINGS_FILE, ratings);
   res.json({ message: 'Rating saved' });
+});
+
+app.post('/api/upload', authenticateToken, upload.single('audio'), (req, res) => {
+  const { parentId, childId, volunteerId } = req.body;
+  const recordings = readJson(RECORDINGS_FILE);
+  const newRecord = {
+    id: Date.now(),
+    parentId,
+    childId,
+    volunteerId,
+    filePath: req.file.path,
+    uploadedAt: new Date().toISOString(),
+  };
+  recordings.push(newRecord);
+  writeJson(RECORDINGS_FILE, recordings);
+  res.json({ message: 'Upload successful', id: newRecord.id });
+});
+
+app.get('/api/recordings', authenticateToken, (req, res) => {
+  const recordings = readJson(RECORDINGS_FILE);
+  res.json(recordings);
+});
+
+app.get('/api/recordings/:childId', authenticateToken, (req, res) => {
+  const { childId } = req.params;
+  const recordings = readJson(RECORDINGS_FILE).filter((r) => r.childId === childId);
+  res.json(recordings);
 });
 
 app.listen(PORT, () => {
