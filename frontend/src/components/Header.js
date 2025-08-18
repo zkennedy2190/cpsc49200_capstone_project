@@ -11,6 +11,7 @@ function Header() {
         <Link to="/admin">Admin Dashboard</Link>
         <Link to="/parent">Parent Dashboard</Link>
         <Link to="/guardian">Guardian Dashboard</Link>
+        <Link to="/login">Login</Link>
       </nav>
     </header>
   );
