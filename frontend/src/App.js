@@ -11,7 +11,7 @@ import LoginPage from './pages/LoginPage';
 import RecordingsLibraryPage from './pages/RecordingsLibraryPage';
 import BookSelectionPage from './pages/BookSelectionPage';
 import SchedulePage from './pages/SchedulePage';
-import PrivateRoute from './PrivateRoute'; 
+import PrivateRoute from './PrivateRoute';
 
 function App() {
   return (
@@ -19,15 +19,15 @@ function App() {
       <Header />
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/volunteer" element={<VolunteerDashboard />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/parent" element={<ParentDashboard />} />
-        <Route path="/guardian" element={<GuardianDashboard />} />
+        <Route path="/admin" element={<PrivateRoute roles={['admin']} element={<AdminDashboard />} />} />
+        <Route path="/volunteer" element={<PrivateRoute roles={['volunteer']} element={<VolunteerDashboard />} />} />
+        <Route path="/parent" element={<PrivateRoute roles={['parent']} element={<ParentDashboard />} />} />
+        <Route path="/guardian" element={<PrivateRoute roles={['guardian']} element={<GuardianDashboard />} />} />
+        <Route path="/schedule" element={<PrivateRoute roles={['volunteer']} element={<SchedulePage />} />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/recordings" element={<RecordingsLibraryPage />} />
         <Route path="/books" element={<BookSelectionPage />} />
-        <Route path="/schedule" element={<PrivateRoute roles={['volunteer']} element={<SchedulePage />} />} />
       </Routes>
       <Footer />
     </div>

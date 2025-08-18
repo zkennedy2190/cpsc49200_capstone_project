@@ -52,7 +52,7 @@ app.post('/api/login', async (req, res) => {
   const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, {
     expiresIn: '1h',
   });
-  res.json({ token, role: user.role });
+  res.json({ token, role: user.role, id: user.id });
 });
 
 function authenticateToken(req, res, next) {
@@ -85,7 +85,7 @@ app.post('/api/ratings', authenticateToken, (req, res) => {
     rating,
     comment,
     userId: req.user.id,
-    volunteerId: req.body.volunteerId, 
+    volunteerId: req.body.volunteerId,
     date: new Date().toISOString(),
   });
   writeJson(RATINGS_FILE, ratings);
@@ -121,12 +121,18 @@ app.get('/api/recordings/:childId', authenticateToken, (req, res) => {
 
 app.get('/api/schedules', authenticateToken, (req, res) => {
   const schedules = readJson(SCHEDULES_FILE);
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Only admins can access all schedules' });
+  }
   res.json(schedules);
 });
 
 app.get('/api/schedules/volunteer/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
   const schedules = readJson(SCHEDULES_FILE).filter((s) => s.volunteerId === id);
+  if (req.user.role !== 'volunteer' && req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Unauthorized' });
+  }
   res.json(schedules);
 });
 
@@ -137,8 +143,8 @@ app.get('/api/ratings', authenticateToken, (req, res) => {
 
 app.post('/api/schedules', authenticateToken, (req, res) => {
   const { volunteerId, parentId, dateTime } = req.body;
-  if (!volunteerId || !parentId || !dateTime) {
-    return res.status(400).json({ message: 'Missing fields' });
+  if (req.user.role !== 'volunteer') {
+    return res.status(403).json({ message: 'Only volunteers can create schedules' });
   }
   const schedules = readJson(SCHEDULES_FILE);
   const entry = {
