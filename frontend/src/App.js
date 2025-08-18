@@ -10,6 +10,8 @@ import GuardianDashboard from './pages/GuardianDashboard';
 import LoginPage from './pages/LoginPage';
 import RecordingsLibraryPage from './pages/RecordingsLibraryPage';
 import BookSelectionPage from './pages/BookSelectionPage';
+import SchedulePage from './pages/SchedulePage';
+import PrivateRoute from './PrivateRoute'; 
 
 function App() {
   return (
@@ -25,6 +27,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/recordings" element={<RecordingsLibraryPage />} />
         <Route path="/books" element={<BookSelectionPage />} />
+        <Route path="/schedule" element={<PrivateRoute roles={['volunteer']} element={<SchedulePage />} />} />
       </Routes>
       <Footer />
     </div>

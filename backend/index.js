@@ -11,6 +11,10 @@ const JWT_SECRET = process.env.JWT_SECRET || 'mysecretkey';
 const USERS_FILE = path.join(__dirname, 'users.json');
 const RATINGS_FILE = path.join(__dirname, 'ratings.json');
 const RECORDINGS_FILE = path.join(__dirname, "recordings.json");
+const SCHEDULES_FILE = path.join(__dirname, 'schedules.json');
+const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+res.json({ token, role: user.role, id: user.id });
+
 
 app.use(express.json());
 
@@ -64,6 +68,7 @@ function authenticateToken(req, res, next) {
 
 if (!fs.existsSync(RATINGS_FILE)) writeJson(RATINGS_FILE, []);
 if (!fs.existsSync(RECORDINGS_FILE)) writeJson(RECORDINGS_FILE, []);
+if (!fs.existsSync(SCHEDULES_FILE)) writeJson(SCHEDULES_FILE, []);
 
 app.post('/api/ratings', authenticateToken, (req, res) => {
   const { recording, rating } = req.body;
@@ -99,6 +104,35 @@ app.get('/api/recordings/:childId', authenticateToken, (req, res) => {
   const { childId } = req.params;
   const recordings = readJson(RECORDINGS_FILE).filter((r) => r.childId === childId);
   res.json(recordings);
+});
+
+app.get('/api/schedules', authenticateToken, (req, res) => {
+  const schedules = readJson(SCHEDULES_FILE);
+  res.json(schedules);
+});
+
+app.get('/api/schedules/volunteer/:id', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const schedules = readJson(SCHEDULES_FILE).filter((s) => s.volunteerId === id);
+  res.json(schedules);
+});
+
+app.post('/api/schedules', authenticateToken, (req, res) => {
+  const { volunteerId, parentId, dateTime } = req.body;
+  if (!volunteerId || !parentId || !dateTime) {
+    return res.status(400).json({ message: 'Missing fields' });
+  }
+  const schedules = readJson(SCHEDULES_FILE);
+  const entry = {
+    id: Date.now(),
+    volunteerId,
+    parentId,
+    dateTime,
+    createdAt: new Date().toISOString(),
+  };
+  schedules.push(entry);
+  writeJson(SCHEDULES_FILE, schedules);
+  res.json({ message: 'Schedule created', id: entry.id });
 });
 
 app.listen(PORT, () => {

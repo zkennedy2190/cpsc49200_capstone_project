@@ -23,7 +23,7 @@ function LoginPage() {
     });
     const data = await res.json();
     if (res.ok) {
-      login({ token: data.token, role: data.role });
+      login({ token: data.token, role: data.role, id: data.id });
       // redirect based on role
       if (data.role === 'parent') navigate('/parent');
       else if (data.role === 'guardian') navigate('/guardian');
