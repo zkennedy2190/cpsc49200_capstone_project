@@ -16,9 +16,7 @@ function AudioRecorder() {
             <p>Status: {status}</p>
             <button onClick={startRecording}>Start</button>
             <button onClick={stopRecording}>Stop</button>
-            {mediaBlobUrl && (
-              <audio src={mediaBlobUrl} controls />
-            )}
+            {mediaBlobUrl && <audio src={mediaBlobUrl} controls />}
           </div>
         )}
       />
