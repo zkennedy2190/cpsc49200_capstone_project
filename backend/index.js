@@ -2,45 +2,74 @@ const express = require('express');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir);
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = `${Date.now()}-${file.originalname}`;
-    cb(null, uniqueName);
-  },
-});
-
-const upload = multer({ storage });
+const JWT_SECRET = process.env.JWT_SECRET || 'mysecretkey';
+const USERS_FILE = path.join(__dirname, 'users.json');
+const RATINGS_FILE = path.join(__dirname, 'ratings.json');
 
 app.use(express.json());
 
-app.post('/api/upload', upload.single('audio'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ message: 'No file uploaded' });
-  }
-  res.json({ filename: req.file.filename });
-});
-
-app.get('/api/recordings', (req, res) => {
-  const uploadDir = path.join(__dirname, 'uploads');
-  const files = fs.existsSync(uploadDir)
-    ? fs.readdirSync(uploadDir)
+function readJson(filePath) {
+  return fs.existsSync(filePath)
+    ? JSON.parse(fs.readFileSync(filePath, 'utf-8'))
     : [];
-  res.json(files);
+}
+function writeJson(filePath, data) {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+}
+
+app.post('/api/register', async (req, res) => {
+  const { username, password, role } = req.body;
+  if (!username || !password || !role) {
+    return res.status(400).json({ message: 'Missing fields' });
+  }
+  const users = readJson(USERS_FILE);
+  if (users.find((u) => u.username === username)) {
+    return res.status(409).json({ message: 'User already exists' });
+  }
+  const hashed = await bcrypt.hash(password, 10);
+  users.push({ id: Date.now(), username, password: hashed, role });
+  writeJson(USERS_FILE, users);
+  res.json({ message: 'Registration successful' });
 });
 
-app.get('/', (req, res) => {
-  res.send('API running');
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  const users = readJson(USERS_FILE);
+  const user = users.find((u) => u.username === username);
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    return res.status(401).json({ message: 'Invalid credentials' });
+  }
+  const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, {
+    expiresIn: '1h',
+  });
+  res.json({ token, role: user.role });
+});
+
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.sendStatus(401);
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+}
+
+if (!fs.existsSync(RATINGS_FILE)) writeJson(RATINGS_FILE, []);
+
+app.post('/api/ratings', authenticateToken, (req, res) => {
+  const { recording, rating } = req.body;
+  if (!recording || !rating) return res.status(400).json({ message: 'Missing data' });
+  const ratings = readJson(RATINGS_FILE);
+  ratings.push({ recording, rating, userId: req.user.id, date: new Date().toISOString() });
+  writeJson(RATINGS_FILE, ratings);
+  res.json({ message: 'Rating saved' });
 });
 
 app.listen(PORT, () => {
