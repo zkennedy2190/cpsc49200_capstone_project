@@ -4,7 +4,6 @@ import { AuthContext } from './AuthContext';
 
 function PrivateRoute({ roles, element }) {
   const { user } = useContext(AuthContext);
-
   if (!user) {
     return <Navigate to="/login" />;
   }
