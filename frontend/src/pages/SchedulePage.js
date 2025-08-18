@@ -32,6 +32,30 @@ function SchedulePage() {
     }
   }, [userId, token]);
 
+  useEffect(() => {
+    async function fetchAverages() {
+      const res = await fetch('http://localhost:4000/api/ratings', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const ratings = await res.json();
+      const totals = {};
+      ratings.forEach((r) => {
+        const vid = r.volunteerId;
+        if (!totals[vid]) {
+          totals[vid] = { sum: 0, count: 0 };
+        }
+        totals[vid].sum += Number(r.rating);
+        totals[vid].count += 1;
+      });
+      const averages = {};
+      Object.keys(totals).forEach(
+        (vid) => (averages[vid] = totals[vid].sum / totals[vid].count)
+      );
+      setVolunteerAverages(averages);
+    }
+    fetchAverages();
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const res = await fetch('http://localhost:4000/api/schedules', {
@@ -63,7 +87,6 @@ function SchedulePage() {
   return (
     <Paper style={{ padding: 20 }}>
       <h2>Volunteer Schedule</h2>
-
       <form onSubmit={handleSubmit}>
         <TextField
           label="Parent ID"
@@ -92,7 +115,8 @@ function SchedulePage() {
         <TableHead>
           <TableRow>
             <TableCell>Parent ID</TableCell>
-            <TableCell>Date &amp; Time</TableCell>
+            <TableCell>Date & Time</TableCell>
+            <TableCell>Average Rating</TableCell> {/* new column header */}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -100,6 +124,12 @@ function SchedulePage() {
             <TableRow key={session.id}>
               <TableCell>{session.parentId}</TableCell>
               <TableCell>{session.dateTime}</TableCell>
+              {/* new cell to display the average rating for this volunteer */}
+              <TableCell>
+                {volunteerAverages[session.volunteerId]
+                  ? volunteerAverages[session.volunteerId].toFixed(1)
+                  : 'N/A'}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

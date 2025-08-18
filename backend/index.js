@@ -71,10 +71,23 @@ if (!fs.existsSync(RECORDINGS_FILE)) writeJson(RECORDINGS_FILE, []);
 if (!fs.existsSync(SCHEDULES_FILE)) writeJson(SCHEDULES_FILE, []);
 
 app.post('/api/ratings', authenticateToken, (req, res) => {
-  const { recording, rating } = req.body;
-  if (!recording || !rating) return res.status(400).json({ message: 'Missing data' });
+  if (req.user.role !== 'parent') {
+    return res.status(403).json({ message: 'Only parents can submit ratings' });
+  }
+
+  const { recording, rating, comment } = req.body;
+  if (!recording || !rating) {
+    return res.status(400).json({ message: 'Missing data' });
+  }
   const ratings = readJson(RATINGS_FILE);
-  ratings.push({ recording, rating, userId: req.user.id, date: new Date().toISOString() });
+  ratings.push({
+    recording,
+    rating,
+    comment,
+    userId: req.user.id,
+    volunteerId: req.body.volunteerId, 
+    date: new Date().toISOString(),
+  });
   writeJson(RATINGS_FILE, ratings);
   res.json({ message: 'Rating saved' });
 });
@@ -115,6 +128,11 @@ app.get('/api/schedules/volunteer/:id', authenticateToken, (req, res) => {
   const { id } = req.params;
   const schedules = readJson(SCHEDULES_FILE).filter((s) => s.volunteerId === id);
   res.json(schedules);
+});
+
+app.get('/api/ratings', authenticateToken, (req, res) => {
+  const ratings = readJson(RATINGS_FILE);
+  res.json(ratings);
 });
 
 app.post('/api/schedules', authenticateToken, (req, res) => {
