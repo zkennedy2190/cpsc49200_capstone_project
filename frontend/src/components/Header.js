@@ -7,10 +7,12 @@ function Header() {
       <h1>Aunt Mary’s Storybook Portal</h1>
       <nav>
         <Link to="/">Home</Link> |{' '}
+        <Link to="/parent">Parent Dashboard</Link> |{' '}
+        <Link to="/guardian">Guardian Dashboard</Link> |{' '}
         <Link to="/volunteer">Volunteer Dashboard</Link> |{' '}
-        <Link to="/admin">Admin Dashboard</Link>
-        <Link to="/parent">Parent Dashboard</Link>
-        <Link to="/guardian">Guardian Dashboard</Link>
+        <Link to="/admin">Admin Dashboard</Link> |{' '}
+        <Link to="/recordings">Recordings Library</Link> |{' '}
+        <Link to="/books">Book Selection</Link> |{' '}
         <Link to="/login">Login</Link>
       </nav>
     </header>
