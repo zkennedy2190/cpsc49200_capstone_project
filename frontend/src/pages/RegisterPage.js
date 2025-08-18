@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
 
 function RegisterPage() {
     const [form, setForm] = useState({ username: '', password: '', role: 'parent' });
@@ -23,15 +26,40 @@ function RegisterPage() {
         <div>
             <h2>Register</h2>
             <form onSubmit={handleSubmit}>
-                <input name="username" placeholder="Username" value={form.username} onChange={handleChange} />
-                <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} />
-                <select name="role" value={form.role} onChange={handleChange}>
-                    <option value="parent">Parent</option>
-                    <option value="guardian">Guardian</option>
-                    <option value="volunteer">Volunteer</option>
-                    <option value="admin">Admin</option>
-                </select>
-                <button type="submit">Register</button>
+                <TextField
+                    label="Username"
+                    name="username"
+                    value={form.username}
+                    onChange={handleChange}
+                    fullWidth
+                    margin="normal"
+                />
+                <TextField
+                    label="Password"
+                    name="password"
+                    type="password"
+                    value={form.password}
+                    onChange={handleChange}
+                    fullWidth
+                    margin="normal"
+                />
+                <TextField
+                    select
+                    label="Role"
+                    name="role"
+                    value={form.role}
+                    onChange={handleChange}
+                    fullWidth
+                    margin="normal"
+                >
+                    <MenuItem value="parent">Parent</MenuItem>
+                    <MenuItem value="guardian">Guardian</MenuItem>
+                    <MenuItem value="volunteer">Volunteer</MenuItem>
+                    <MenuItem value="admin">Admin</MenuItem>
+                </TextField>
+                <Button type="submit" variant="contained" color="primary">
+                    Register
+                </Button>
             </form>
             {message && <p>{message}</p>}
         </div>

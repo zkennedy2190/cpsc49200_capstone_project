@@ -1,6 +1,8 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
 
 function LoginPage() {
   const [form, setForm] = useState({ username: '', password: '' });
@@ -22,7 +24,7 @@ function LoginPage() {
     const data = await res.json();
     if (res.ok) {
       login({ token: data.token, role: data.role });
-
+      // redirect based on role
       if (data.role === 'parent') navigate('/parent');
       else if (data.role === 'guardian') navigate('/guardian');
       else if (data.role === 'volunteer') navigate('/volunteer');
@@ -36,9 +38,26 @@ function LoginPage() {
     <div>
       <h2>Login</h2>
       <form onSubmit={handleSubmit}>
-        <input name="username" placeholder="Username" value={form.username} onChange={handleChange} />
-        <input name="password" type="password" placeholder="Password" value={form.password} onChange={handleChange} />
-        <button type="submit">Login</button>
+        <TextField
+          label="Username"
+          name="username"
+          value={form.username}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+        />
+        <TextField
+          label="Password"
+          name="password"
+          type="password"
+          value={form.password}
+          onChange={handleChange}
+          fullWidth
+          margin="normal"
+        />
+        <Button type="submit" variant="contained" color="primary">
+          Login
+        </Button>
       </form>
       {message && <p>{message}</p>}
     </div>
