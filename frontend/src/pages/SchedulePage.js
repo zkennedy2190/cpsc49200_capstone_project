@@ -1,22 +1,21 @@
 import React, { useEffect, useState, useContext } from 'react';
+import Table from '@mui/material/Table';
+import TableHead from '@mui/material/TableHead';
+import TableBody from '@mui/material/TableBody';
+import TableRow from '@mui/material/TableRow';
+import TableCell from '@mui/material/TableCell';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 import { AuthContext } from '../AuthContext';
 
 function SchedulePage() {
-  const { token, userId } = useContext(AuthContext); // ensure userId is stored in AuthContext
+  const { token, userId } = useContext(AuthContext);
   const [schedules, setSchedules] = useState([]);
   const [parentId, setParentId] = useState('');
   const [dateTime, setDateTime] = useState('');
   const [message, setMessage] = useState('');
 
-  // Fetch the volunteer’s schedule on component mount
   useEffect(() => {
     async function fetchSchedules() {
       const res = await fetch(
@@ -33,7 +32,6 @@ function SchedulePage() {
     }
   }, [userId, token]);
 
-  // Handle form submission to add a new schedule entry
   const handleSubmit = async (e) => {
     e.preventDefault();
     const res = await fetch('http://localhost:4000/api/schedules', {
@@ -51,7 +49,6 @@ function SchedulePage() {
     const data = await res.json();
     if (res.ok) {
       setMessage('Schedule created');
-      // Refresh the list
       setSchedules((prev) => [
         ...prev,
         { id: data.id, volunteerId: userId, parentId, dateTime },

@@ -2,6 +2,14 @@ import React, { useState } from 'react';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
+import Table from '@mui/material/Table';
+import TableHead from '@mui/material/TableHead';
+import TableBody from '@mui/material/TableBody';
+import TableRow from '@mui/material/TableRow';
+import TableCell from '@mui/material/TableCell';
+import Button from '@mui/material/Button';
+import Paper from '@mui/material/Paper';
+
 
 function RegisterPage() {
     const [form, setForm] = useState({ username: '', password: '', role: 'parent' });
@@ -23,7 +31,7 @@ function RegisterPage() {
     };
 
     return (
-        <div>
+        <Paper style={{ padding: 20 }}>
             <h2>Register</h2>
             <form onSubmit={handleSubmit}>
                 <TextField
@@ -62,7 +70,7 @@ function RegisterPage() {
                 </Button>
             </form>
             {message && <p>{message}</p>}
-        </div>
+        </Paper>
     );
 }
 
