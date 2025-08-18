@@ -1,23 +1,21 @@
-import React from "react";
-import { Routes, Route } from "react-router-dom";
-
-// Home Page Component
-function Home() {
-  return (
-    <div>
-      <h1>Hello, World!</h1>
-      <p>Welcome to the Aunt Mary’s Storybook project.</p>
-    </div>
-  );
-}
+import { Routes, Route } from 'react-router-dom';
+import Home from './Home';
+import VolunteerDashboard from './pages/VolunteerDashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import Header from './components/Header';
+import Footer from './components/Footer';
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      {/* Add more Route components here for future pages */}
-    </Routes>
+    <div className="App">
+      <Header />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/volunteer" element={<VolunteerDashboard />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+      </Routes>
+      <Footer />
+    </div>
   );
 }
-
 export default App;
