@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
-import Home from './Home';
+import HomePage from './pages/HomePage';
 import VolunteerDashboard from './pages/VolunteerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import Header from './components/Header';
@@ -10,7 +10,7 @@ function App() {
     <div className="App">
       <Header />
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<HomePage />} />
         <Route path="/volunteer" element={<VolunteerDashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
