@@ -48,6 +48,23 @@ function LoginPage() {
     }
   };
 
+  // Styling: black text, labels and icons; black border; subtle hover highlight
+  const fieldStyles = {
+    '& .MuiInputBase-input': { color: '#000' },
+    '& .MuiInputLabel-root': { color: '#000' },
+    '& .MuiSvgIcon-root': { color: '#000' },
+    '& .MuiOutlinedInput-notchedOutline': { borderColor: '#000' },
+    '& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline': {
+      borderColor: '#333',
+    },
+    '& .MuiOutlinedInput-root:hover': {
+      backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    },
+    '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+      borderColor: '#000',
+    },
+  };
+
   return (
     <Container maxWidth="sm" sx={{ mt: 4 }}>
       <Card
@@ -69,20 +86,13 @@ function LoginPage() {
               value={form.username}
               onChange={handleChange}
               fullWidth
+              sx={fieldStyles}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
                     <AccountCircle />
                   </InputAdornment>
                 ),
-              }}
-              // Set the outline colour to black
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': { borderColor: '#000' },
-                  '&:hover fieldset': { borderColor: '#222' },
-                  '&.Mui-focused fieldset': { borderColor: '#000' },
-                },
               }}
             />
             <TextField
@@ -92,19 +102,13 @@ function LoginPage() {
               value={form.password}
               onChange={handleChange}
               fullWidth
+              sx={fieldStyles}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
                     <LockIcon />
                   </InputAdornment>
                 ),
-              }}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '& fieldset': { borderColor: '#000' },
-                  '&:hover fieldset': { borderColor: '#222' },
-                  '&.Mui-focused fieldset': { borderColor: '#000' },
-                },
               }}
             />
             <Button variant="contained" type="submit">

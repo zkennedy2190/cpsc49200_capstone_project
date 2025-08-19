@@ -9,10 +9,6 @@ import {
   Stack,
 } from '@mui/material';
 
-/**
- * Landing page with a glossy gold card, centred heading and tagline.
- * Includes Login, Register and About Us buttons only.
- */
 function HomePage() {
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
@@ -27,21 +23,22 @@ function HomePage() {
           <Typography variant="h4" gutterBottom>
             Welcome to StoryBridge
           </Typography>
+          {/* Enlarged and underlined tagline with custom font size and weight */}
           <Typography
             variant="subtitle1"
             gutterBottom
-            sx={{ textDecoration: 'underline' }}
+            sx={{ textDecoration: 'underline', fontSize: '1.25rem', fontWeight: 600 }}
           >
             Aunt Mary’s Storybook Portal
           </Typography>
+          {/* Enlarged descriptive line with italic styling */}
           <Typography
             variant="body2"
             gutterBottom
-            sx={{ fontStyle: 'italic' }}
+            sx={{ fontSize: '1.1rem', fontStyle: 'italic' }}
           >
             Connecting volunteers with children and families for interactive reading sessions
           </Typography>
-          {/* Remove Recordings and Schedule; add About Us */}
           <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 2 }}>
             <Button variant="contained" component={Link} to="/login">
               Login

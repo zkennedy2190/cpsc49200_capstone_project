@@ -1,59 +1,87 @@
+// frontend/src/App.js
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './AuthContext';
 import PrivateRoute from './PrivateRoute';
 import Header from './components/Header';
 import Footer from './components/Footer';
+
+// Pages
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import AboutUsPage from './pages/AboutUsPage';
+import BookSelectionPage from './pages/BookSelectionPage';
+import RecordingsLibraryPage from './pages/RecordingsLibraryPage';
+import SchedulePage from './pages/SchedulePage';
 import VolunteerDashboard from './pages/VolunteerDashboard';
 import ParentDashboard from './pages/ParentDashboard';
 import GuardianDashboard from './pages/GuardianDashboard';
 import AdminDashboard from './pages/AdminDashboard';
-import SchedulePage from './pages/SchedulePage';
-import RecordingsLibraryPage from './pages/RecordingsLibraryPage';
-import BookSelectionPage from './pages/BookSelectionPage';
-
 
 function App() {
   return (
     <AuthProvider>
       <Header />
       <Routes>
+        {/* Public pages */}
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        {/* Everyone logged in can view recordings */}
+        <Route path="/about" element={<AboutUsPage />} />
+        <Route path="/books" element={<BookSelectionPage />} />
+
+        {/* Routes requiring authentication */}
         <Route
           path="/recordings"
-          element={<PrivateRoute element={<RecordingsLibraryPage />} />}
+          element={
+            <PrivateRoute>
+              <RecordingsLibraryPage />
+            </PrivateRoute>
+          }
         />
-        {/* Role-specific dashboards and schedule */}
+        <Route
+          path="/schedule"
+          element={
+            <PrivateRoute>
+              <SchedulePage />
+            </PrivateRoute>
+          }
+        />
+
+        {/* Role-specific dashboards */}
         <Route
           path="/volunteer"
           element={
-            <PrivateRoute roles={['volunteer']} element={<VolunteerDashboard />} />
+            <PrivateRoute requiredRole="volunteer">
+              <VolunteerDashboard />
+            </PrivateRoute>
           }
         />
         <Route
           path="/parent"
-          element={<PrivateRoute roles={['parent']} element={<ParentDashboard />} />}
+          element={
+            <PrivateRoute requiredRole="parent">
+              <ParentDashboard />
+            </PrivateRoute>
+          }
         />
         <Route
           path="/guardian"
-          element={<PrivateRoute roles={['guardian']} element={<GuardianDashboard />} />}
+          element={
+            <PrivateRoute requiredRole="guardian">
+              <GuardianDashboard />
+            </PrivateRoute>
+          }
         />
         <Route
           path="/admin"
-          element={<PrivateRoute roles={['admin']} element={<AdminDashboard />} />}
+          element={
+            <PrivateRoute requiredRole="admin">
+              <AdminDashboard />
+            </PrivateRoute>
+          }
         />
-        <Route
-          path="/schedule"
-          element={<PrivateRoute roles={['volunteer']} element={<SchedulePage />} />}
-        />
-        {/* Book page is public */}
-        <Route path="/book-selection" element={<BookSelectionPage />} />
       </Routes>
       <Footer />
     </AuthProvider>
