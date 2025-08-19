@@ -17,22 +17,29 @@ function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = await fetch('http://localhost:4000/api/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      login({ token: data.token, role: data.role, id: data.id });
-      // redirect by role
-      if (data.role === 'parent') navigate('/parent');
-      else if (data.role === 'guardian') navigate('/guardian');
-      else if (data.role === 'volunteer') navigate('/volunteer');
-      else if (data.role === 'admin') navigate('/admin');
-      setForm({ username: '', password: '' });
-    } else {
-      setMessage(data.message);
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        login({ token: data.token, role: data.role, id: data.id });
+        // Redirect based on the user's role
+        if (data.role === 'parent') navigate('/parent');
+        else if (data.role === 'guardian') navigate('/guardian');
+        else if (data.role === 'volunteer') navigate('/volunteer');
+        else if (data.role === 'admin') navigate('/admin');
+        // Reset form and message
+        setForm({ username: '', password: '' });
+        setMessage('');
+      } else {
+        setMessage(data.message);
+      }
+    } catch (error) {
+      setMessage('Failed to fetch');
+      console.error('Login error:', error);
     }
   };
 

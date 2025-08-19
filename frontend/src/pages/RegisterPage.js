@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-import MenuItem from '@mui/material/MenuItem';
+ import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 
 function RegisterPage() {
@@ -14,14 +14,21 @@ function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const res = await fetch('http://localhost:4000/api/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    });
-    const data = await res.json();
-    setMessage(data.message);
-    if (res.ok) setForm({ username: '', password: '', role: 'parent' });
+    try {
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      setMessage(data.message);
+      if (res.ok) {
+        setForm({ username: '', password: '', role: 'parent' });
+      }
+    } catch (error) {
+      setMessage('Failed to fetch');
+      console.error('Register error:', error);
+    }
   };
 
   return (
