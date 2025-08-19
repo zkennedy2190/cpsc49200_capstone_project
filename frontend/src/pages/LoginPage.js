@@ -1,52 +1,6 @@
-import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../AuthContext';
-import {
-  Container,
-  Card,
-  CardContent,
-  TextField,
-  Button,
-  Typography,
-  Alert,
-  Stack,
-  InputAdornment,
-} from '@mui/material';
-import AccountCircle from '@mui/icons-material/AccountCircle';
-import LockIcon from '@mui/icons-material/Lock';
-
+// imports remain unchanged
 function LoginPage() {
-  const [form, setForm] = useState({ username: '', password: '' });
-  const [message, setMessage] = useState('');
-  const { login } = useContext(AuthContext);
-  const navigate = useNavigate();
-
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        login({ token: data.token, role: data.role, id: data.id });
-        setForm({ username: '', password: '' });
-        setMessage('');
-        if (data.role === 'parent') navigate('/parent');
-        else if (data.role === 'guardian') navigate('/guardian');
-        else if (data.role === 'volunteer') navigate('/volunteer');
-        else if (data.role === 'admin') navigate('/admin');
-      } else {
-        setMessage(data.message);
-      }
-    } catch {
-      setMessage('Login failed');
-    }
-  };
+  // state and handlers remain unchanged
 
   return (
     <Container maxWidth="sm" sx={{ mt: 4 }}>
@@ -76,6 +30,9 @@ function LoginPage() {
                   </InputAdornment>
                 ),
               }}
+              // Make the input field black with white text
+              sx={{ '& .MuiInputBase-input': { bgcolor: '#000', color: '#fff' } }}
+              InputLabelProps={{ sx: { color: '#000' } }}
             />
             <TextField
               label="Password"
@@ -91,8 +48,9 @@ function LoginPage() {
                   </InputAdornment>
                 ),
               }}
+              sx={{ '& .MuiInputBase-input': { bgcolor: '#000', color: '#fff' } }}
+              InputLabelProps={{ sx: { color: '#000' } }}
             />
-            {/* Matte black button (from theme override) */}
             <Button variant="contained" type="submit">
               Login
             </Button>

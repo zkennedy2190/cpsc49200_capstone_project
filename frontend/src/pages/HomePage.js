@@ -19,19 +19,16 @@ function HomePage() {
           color: 'black',
         }}
       >
-        <CardContent>
-          {/* Updated heading */}
+        <CardContent sx={{ textAlign: 'center' }}>
           <Typography variant="h4" gutterBottom>
-            Welcome to StoryBridge!
+            Welcome to StoryBridge
           </Typography>
-          {/* Tagline referring back to Aunt Mary’s Storybook */}
+          {/* Centre the tagline on its own line */}
           <Typography variant="subtitle1" gutterBottom>
-            Aunt Mary’s Storybook Portal
+            Aunt Mary’s Storybook portal
           </Typography>
-          <Typography variant="body1" gutterBottom>
-            Connecting volunteers with children and families for interactive reading sessions.
-          </Typography>
-          <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+          {/* Remove the extra descriptive line here */}
+          <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 2 }}>
             <Button variant="contained" component={Link} to="/login">
               Login
             </Button>

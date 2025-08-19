@@ -17,6 +17,9 @@ import {
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import LockIcon from '@mui/icons-material/Lock';
 
+/**
+ * Registration form styled with a glossy gold card and black input fields.
+ */
 function RegisterPage() {
   const [form, setForm] = useState({ username: '', password: '', role: 'parent' });
   const [message, setMessage] = useState('');
@@ -69,6 +72,8 @@ function RegisterPage() {
               value={form.username}
               onChange={handleChange}
               fullWidth
+              sx={{ '& .MuiInputBase-input': { bgcolor: '#000', color: '#fff' } }}
+              InputLabelProps={{ sx: { color: '#000' } }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -84,6 +89,8 @@ function RegisterPage() {
               value={form.password}
               onChange={handleChange}
               fullWidth
+              sx={{ '& .MuiInputBase-input': { bgcolor: '#000', color: '#fff' } }}
+              InputLabelProps={{ sx: { color: '#000' } }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -93,7 +100,9 @@ function RegisterPage() {
               }}
             />
             <FormControl fullWidth>
-              <InputLabel id="role-label">Role</InputLabel>
+              <InputLabel id="role-label" sx={{ color: '#000' }}>
+                Role
+              </InputLabel>
               <Select
                 labelId="role-label"
                 name="role"
@@ -107,7 +116,7 @@ function RegisterPage() {
                 <MenuItem value="admin">Admin</MenuItem>
               </Select>
             </FormControl>
-            {/* Matte black button (from theme override) */}
+            {/* Matte black button from theme override */}
             <Button variant="contained" type="submit">
               Register
             </Button>
