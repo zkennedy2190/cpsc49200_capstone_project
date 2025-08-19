@@ -18,7 +18,7 @@ import AccountCircle from '@mui/icons-material/AccountCircle';
 import LockIcon from '@mui/icons-material/Lock';
 
 /**
- * Registration form styled with a glossy gold card and black input fields.
+ * Registration form with a glossy gold background and black input fields.
  */
 function RegisterPage() {
   const [form, setForm] = useState({ username: '', password: '', role: 'parent' });
@@ -72,8 +72,6 @@ function RegisterPage() {
               value={form.username}
               onChange={handleChange}
               fullWidth
-              sx={{ '& .MuiInputBase-input': { bgcolor: '#000', color: '#fff' } }}
-              InputLabelProps={{ sx: { color: '#000' } }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -81,6 +79,8 @@ function RegisterPage() {
                   </InputAdornment>
                 ),
               }}
+              sx={{ '& .MuiInputBase-input': { bgcolor: '#000', color: '#fff' } }}
+              InputLabelProps={{ sx: { color: '#000' } }}
             />
             <TextField
               label="Password"
@@ -89,8 +89,6 @@ function RegisterPage() {
               value={form.password}
               onChange={handleChange}
               fullWidth
-              sx={{ '& .MuiInputBase-input': { bgcolor: '#000', color: '#fff' } }}
-              InputLabelProps={{ sx: { color: '#000' } }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -98,6 +96,8 @@ function RegisterPage() {
                   </InputAdornment>
                 ),
               }}
+              sx={{ '& .MuiInputBase-input': { bgcolor: '#000', color: '#fff' } }}
+              InputLabelProps={{ sx: { color: '#000' } }}
             />
             <FormControl fullWidth>
               <InputLabel id="role-label" sx={{ color: '#000' }}>
@@ -116,7 +116,6 @@ function RegisterPage() {
                 <MenuItem value="admin">Admin</MenuItem>
               </Select>
             </FormControl>
-            {/* Matte black button from theme override */}
             <Button variant="contained" type="submit">
               Register
             </Button>

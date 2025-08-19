@@ -9,6 +9,9 @@ import {
   Stack,
 } from '@mui/material';
 
+/**
+ * Landing page with a glossy gold card.  Headings are centered and the tagline sits beneath.
+ */
 function HomePage() {
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
@@ -23,11 +26,9 @@ function HomePage() {
           <Typography variant="h4" gutterBottom>
             Welcome to StoryBridge
           </Typography>
-          {/* Centre the tagline on its own line */}
           <Typography variant="subtitle1" gutterBottom>
             Aunt Mary’s Storybook portal
           </Typography>
-          {/* Remove the extra descriptive line here */}
           <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 2 }}>
             <Button variant="contained" component={Link} to="/login">
               Login
@@ -47,4 +48,5 @@ function HomePage() {
     </Container>
   );
 }
+
 export default HomePage;

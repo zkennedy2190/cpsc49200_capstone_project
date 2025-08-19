@@ -15,7 +15,6 @@ const theme = createTheme({
     },
   },
   typography: {
-    // Set a more friendly global font
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
     h4: { fontWeight: 700 },
     h5: { fontWeight: 600 },
