@@ -1,32 +1,49 @@
-import React, { createContext, useState } from 'react';
+// frontend/src/AuthContext.js
+import React, { createContext, useState, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-export const AuthContext = createContext();
+// Export the context itself for legacy imports
+export const AuthContext = createContext(null);
 
-export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(() => {
-        const token = localStorage.getItem('token');
-        const role = localStorage.getItem('role');
-        const id = localStorage.getItem('userId');
-        return token ? { token, role, id } : null;
-    });
+/**
+ * Hook for consuming the auth context
+ */
+export function useAuth() {
+  return useContext(AuthContext);
+}
 
-    const login = ({ token, role, id }) => {
-        setUser({ token, role, id });
-        localStorage.setItem('token', token);
-        localStorage.setItem('role', role);
-        localStorage.setItem('userId', id);
-    };
+/**
+ * AuthProvider supplies login/logout functionality and current user.
+ */
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
-    const logout = () => {
-        setUser(null);
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-        localStorage.removeItem('userId');
-    };
+  // Called after successful login
+  const login = (userData) => {
+    setUser(userData);
+  };
 
-    return (
-        <AuthContext.Provider value={{ user, login, logout }}>
-            {children}
-        </AuthContext.Provider>
-    );
-};
+  /**
+   * Logs the user out, then redirects to login and reloads the page.
+   */
+  const logout = () => {
+    setUser(null);
+    navigate('/login', { replace: true });
+    // Force a full page reload to clear any residual state
+    window.location.reload();
+  };
+
+  // Provide the context value
+  const value = {
+    user,
+    login,
+    logout,
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+}

@@ -29,7 +29,7 @@ function HomePage() {
             gutterBottom
             sx={{ textDecoration: 'underline', fontSize: '1.25rem', fontWeight: 600 }}
           >
-            Aunt Mary’s Storybook Portal
+            An Extension of Aunt Mary’s Storybook Project
           </Typography>
           {/* Enlarged descriptive line with italic styling */}
           <Typography
