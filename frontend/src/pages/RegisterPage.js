@@ -17,9 +17,6 @@ import {
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import LockIcon from '@mui/icons-material/Lock';
 
-/**
- * Registration form with a glossy gold background and black input fields.
- */
 function RegisterPage() {
   const [form, setForm] = useState({ username: '', password: '', role: 'parent' });
   const [message, setMessage] = useState('');
@@ -79,8 +76,13 @@ function RegisterPage() {
                   </InputAdornment>
                 ),
               }}
-              sx={{ '& .MuiInputBase-input': { bgcolor: '#000', color: '#fff' } }}
-              InputLabelProps={{ sx: { color: '#000' } }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': { borderColor: '#000' },
+                  '&:hover fieldset': { borderColor: '#222' },
+                  '&.Mui-focused fieldset': { borderColor: '#000' },
+                },
+              }}
             />
             <TextField
               label="Password"
@@ -96,13 +98,25 @@ function RegisterPage() {
                   </InputAdornment>
                 ),
               }}
-              sx={{ '& .MuiInputBase-input': { bgcolor: '#000', color: '#fff' } }}
-              InputLabelProps={{ sx: { color: '#000' } }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': { borderColor: '#000' },
+                  '&:hover fieldset': { borderColor: '#222' },
+                  '&.Mui-focused fieldset': { borderColor: '#000' },
+                },
+              }}
             />
-            <FormControl fullWidth>
-              <InputLabel id="role-label" sx={{ color: '#000' }}>
-                Role
-              </InputLabel>
+            <FormControl
+              fullWidth
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': { borderColor: '#000' },
+                  '&:hover fieldset': { borderColor: '#222' },
+                  '&.Mui-focused fieldset': { borderColor: '#000' },
+                },
+              }}
+            >
+              <InputLabel id="role-label">Role</InputLabel>
               <Select
                 labelId="role-label"
                 name="role"

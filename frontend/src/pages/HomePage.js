@@ -10,7 +10,8 @@ import {
 } from '@mui/material';
 
 /**
- * Landing page with a glossy gold card.  Headings are centered and the tagline sits beneath.
+ * Landing page with a glossy gold card, centred heading and tagline.
+ * Includes Login, Register and About Us buttons only.
  */
 function HomePage() {
   return (
@@ -26,9 +27,21 @@ function HomePage() {
           <Typography variant="h4" gutterBottom>
             Welcome to StoryBridge
           </Typography>
-          <Typography variant="subtitle1" gutterBottom>
-            Aunt Mary’s Storybook portal
+          <Typography
+            variant="subtitle1"
+            gutterBottom
+            sx={{ textDecoration: 'underline' }}
+          >
+            Aunt Mary’s Storybook Portal
           </Typography>
+          <Typography
+            variant="body2"
+            gutterBottom
+            sx={{ fontStyle: 'italic' }}
+          >
+            Connecting volunteers with children and families for interactive reading sessions
+          </Typography>
+          {/* Remove Recordings and Schedule; add About Us */}
           <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 2 }}>
             <Button variant="contained" component={Link} to="/login">
               Login
@@ -36,11 +49,8 @@ function HomePage() {
             <Button variant="contained" component={Link} to="/register">
               Register
             </Button>
-            <Button variant="contained" component={Link} to="/recordings">
-              Recordings
-            </Button>
-            <Button variant="contained" component={Link} to="/schedule">
-              Schedule
+            <Button variant="contained" component={Link} to="/about">
+              About Us
             </Button>
           </Stack>
         </CardContent>

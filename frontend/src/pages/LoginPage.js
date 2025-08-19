@@ -15,9 +15,6 @@ import {
 import AccountCircle from '@mui/icons-material/AccountCircle';
 import LockIcon from '@mui/icons-material/Lock';
 
-/**
- * Login form with a gold background and black input fields.
- */
 function LoginPage() {
   const [form, setForm] = useState({ username: '', password: '' });
   const [message, setMessage] = useState('');
@@ -79,8 +76,14 @@ function LoginPage() {
                   </InputAdornment>
                 ),
               }}
-              sx={{ '& .MuiInputBase-input': { bgcolor: '#000', color: '#fff' } }}
-              InputLabelProps={{ sx: { color: '#000' } }}
+              // Set the outline colour to black
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': { borderColor: '#000' },
+                  '&:hover fieldset': { borderColor: '#222' },
+                  '&.Mui-focused fieldset': { borderColor: '#000' },
+                },
+              }}
             />
             <TextField
               label="Password"
@@ -96,8 +99,13 @@ function LoginPage() {
                   </InputAdornment>
                 ),
               }}
-              sx={{ '& .MuiInputBase-input': { bgcolor: '#000', color: '#fff' } }}
-              InputLabelProps={{ sx: { color: '#000' } }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': { borderColor: '#000' },
+                  '&:hover fieldset': { borderColor: '#222' },
+                  '&.Mui-focused fieldset': { borderColor: '#000' },
+                },
+              }}
             />
             <Button variant="contained" type="submit">
               Login
