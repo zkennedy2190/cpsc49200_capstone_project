@@ -24,9 +24,7 @@ function RecordingsLibraryPage() {
             .catch((err) => console.error(err));
     }, [user]);
 
-    const submitRating = async (fileId) => {
-        const rating = ratings[fileId];
-        const comment = comments[fileId];
+    const submitRating = async (file) => {
         await fetch('http://localhost:4000/api/ratings', {
             method: 'POST',
             headers: {
@@ -34,15 +32,15 @@ function RecordingsLibraryPage() {
                 Authorization: `Bearer ${user.token}`,
             },
             body: JSON.stringify({
-                recording: fileId,
-                rating,
-                comment,
-                volunteerId: files.find((f) => f.id === fileId)?.volunteerId,
+                recording: file.id,
+                rating: ratings[file.id],
+                comment: comments[file.id],
+                volunteerId: file.volunteerId,
             }),
         });
-        setRatings((prev) => ({ ...prev, [fileId]: '' }));
-        setComments((prev) => ({ ...prev, [fileId]: '' }));
-        alert('Rating submitted');
+        
+        setRatings({ ...ratings, [file.id]: '' });
+        setComments({ ...comments, [file.id]: '' });
     };
 
     return (

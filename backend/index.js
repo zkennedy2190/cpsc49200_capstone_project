@@ -1,10 +1,14 @@
 const express = require('express');
 const path = require('path');
 const multer = require('multer');
-const upload = multer({ dest: path.join(__dirname, "uploads") });
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { db, init } = require('./db');
+
+init();
+
+const upload = multer({ dest: path.join(__dirname, "uploads") });
 const app = express();
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET || 'mysecretkey';
@@ -120,12 +124,12 @@ app.get('/api/schedules', authenticateToken, (req, res) => {
 });
 
 app.get('/api/schedules/volunteer/:id', authenticateToken, (req, res) => {
-  const { id } = req.params;
-  const schedules = readJson(SCHEDULES_FILE).filter((s) => s.volunteerId === id);
   if (req.user.role !== 'volunteer' && req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Unauthorized' });
   }
-  res.json(schedules);
+  const { id } = req.params;
+  const rows = db.prepare('SELECT * FROM schedules WHERE volunteerId = ?').all(id);
+  res.json(rows);
 });
 
 app.get('/api/ratings', authenticateToken, (req, res) => {
@@ -134,21 +138,22 @@ app.get('/api/ratings', authenticateToken, (req, res) => {
 });
 
 app.post('/api/schedules', authenticateToken, (req, res) => {
-  const { volunteerId, parentId, dateTime } = req.body;
   if (req.user.role !== 'volunteer') {
     return res.status(403).json({ message: 'Only volunteers can create schedules' });
   }
-  const schedules = readJson(SCHEDULES_FILE);
-  const entry = {
-    id: Date.now(),
-    volunteerId,
-    parentId,
-    dateTime,
-    createdAt: new Date().toISOString(),
-  };
-  schedules.push(entry);
-  writeJson(SCHEDULES_FILE, schedules);
-  res.json({ message: 'Schedule created', id: entry.id });
+  const { parentId, startTime, endTime } = req.body;
+  const stmt = db.prepare('INSERT INTO schedules (volunteerId, parentId, startTime, endTime) VALUES (?, ?, ?, ?)');
+  const info = stmt.run(req.user.id, parentId, startTime, endTime);
+  res.json({ id: info.lastInsertRowid, message: 'Schedule created' });
+});
+
+app.put('/api/schedules/:id/approve', authenticateToken, (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Only admins can approve schedules' });
+  }
+  const { id } = req.params;
+  db.prepare('UPDATE schedules SET status = ? WHERE id = ?').run('approved', id);
+  res.json({ message: 'Schedule approved' });
 });
 
 app.listen(PORT, () => {
