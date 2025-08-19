@@ -1,39 +1,37 @@
 import React from 'react';
-import Paper from '@mui/material/Paper';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import TableBody from '@mui/material/TableBody';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
+import { Container, Grid, Card, CardContent, Typography } from '@mui/material';
 
+// Hard‑coded book list; in a real application this could be fetched from an API.
 const books = [
   { title: 'Goodnight Moon', author: 'Margaret Wise Brown' },
   { title: 'The Very Hungry Caterpillar', author: 'Eric Carle' },
   { title: 'Where the Wild Things Are', author: 'Maurice Sendak' },
 ];
 
+/**
+ * Displays available books in a responsive grid of cards rather than a plain table.
+ */
 function BookSelectionPage() {
   return (
-    <Paper style={{ padding: 20 }}>
-      <h2>Book Selection</h2>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Title</TableCell>
-            <TableCell>Author</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {books.map((book, idx) => (
-            <TableRow key={idx}>
-              <TableCell>{book.title}</TableCell>
-              <TableCell>{book.author}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Paper>
+    <Container sx={{ mt: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Book Selection
+      </Typography>
+      <Grid container spacing={2}>
+        {books.map((book, idx) => (
+          <Grid item xs={12} sm={6} md={4} key={idx}>
+            <Card elevation={2}>
+              <CardContent>
+                <Typography variant="h6">{book.title}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {book.author}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Container>
   );
 }
-
 export default BookSelectionPage;

@@ -1,14 +1,20 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../AuthContext';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import Table from '@mui/material/Table';
-import TableHead from '@mui/material/TableHead';
-import TableBody from '@mui/material/TableBody';
-import TableRow from '@mui/material/TableRow';
-import TableCell from '@mui/material/TableCell';
-import Paper from '@mui/material/Paper';
+import {
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Alert,
+  Stack,
+  Grid,
+} from '@mui/material';
 
+/**
+ * Schedule creation and display page for volunteers.
+ */
 function SchedulePage() {
   const { user } = useContext(AuthContext);
   const [schedules, setSchedules] = useState([]);
@@ -18,7 +24,6 @@ function SchedulePage() {
   const [message, setMessage] = useState('');
   const [averages, setAverages] = useState({});
 
-  // Fetch schedules for this volunteer
   useEffect(() => {
     fetch(`http://localhost:4000/api/schedules/volunteer/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
@@ -27,7 +32,6 @@ function SchedulePage() {
       .then((data) => setSchedules(data));
   }, [user]);
 
-  // Fetch ratings to compute volunteer averages
   useEffect(() => {
     fetch('http://localhost:4000/api/ratings', {
       headers: { Authorization: `Bearer ${user.token}` },
@@ -80,62 +84,68 @@ function SchedulePage() {
   };
 
   return (
-    <Paper style={{ padding: 20 }}>
-      <h2>Volunteer Schedule</h2>
-      <form onSubmit={handleSubmit}>
-        <TextField
-          label="Parent ID"
-          value={parentId}
-          onChange={(e) => setParentId(e.target.value)}
-          fullWidth
-          margin="normal"
-        />
-        <TextField
-          label="Start Time"
-          type="datetime-local"
-          value={startTime}
-          onChange={(e) => setStartTime(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          fullWidth
-          margin="normal"
-        />
-        <TextField
-          label="End Time"
-          type="datetime-local"
-          value={endTime}
-          onChange={(e) => setEndTime(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          fullWidth
-          margin="normal"
-        />
-        <Button type="submit" variant="contained" color="primary">
-          Add Session
-        </Button>
-      </form>
-      {message && <p>{message}</p>}
-      <Table style={{ marginTop: 16 }}>
-        <TableHead>
-          <TableRow>
-            <TableCell>Parent ID</TableCell>
-            <TableCell>Start – End</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Avg Rating</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {schedules.map((session) => (
-            <TableRow key={session.id}>
-              <TableCell>{session.parentId}</TableCell>
-              <TableCell>{session.startTime} – {session.endTime}</TableCell>
-              <TableCell>{session.status}</TableCell>
-              <TableCell>
-                {averages[user.id] ? averages[user.id].toFixed(1) : 'N/A'}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Paper>
+    <Container maxWidth="md" sx={{ mt: 4 }}>
+      <Typography variant="h4" gutterBottom>
+        Volunteer Schedule
+      </Typography>
+      {message && <Alert severity="success">{message}</Alert>}
+      <Card variant="outlined" sx={{ mb: 4 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Create New Session
+          </Typography>
+          <Stack spacing={2} component="form" onSubmit={handleSubmit}>
+            <TextField
+              label="Parent ID"
+              value={parentId}
+              onChange={(e) => setParentId(e.target.value)}
+              fullWidth
+            />
+            <TextField
+              label="Start Time"
+              type="datetime-local"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+            <TextField
+              label="End Time"
+              type="datetime-local"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+            <Button variant="contained" type="submit">
+              Add Session
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
+      <Grid container spacing={2}>
+        {schedules.map((session) => (
+          <Grid item xs={12} sm={6} key={session.id}>
+            <Card elevation={1}>
+              <CardContent>
+                <Typography variant="subtitle1">Parent: {session.parentId}</Typography>
+                <Typography variant="body2">
+                  {new Date(session.startTime).toLocaleString()} –{' '}
+                  {new Date(session.endTime).toLocaleString()}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Status: <strong>{session.status}</strong>
+                </Typography>
+                <Typography variant="body2">
+                  Avg Rating:{' '}
+                  {averages[user.id] ? averages[user.id].toFixed(1) : 'N/A'}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+    </Container>
   );
 }
 

@@ -1,19 +1,27 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../AuthContext';
-import Button from '@mui/material/Button';
-import TextField from '@mui/material/TextField';
-import Paper from '@mui/material/Paper';
+import {
+  Container,
+  Card,
+  CardContent,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  Stack,
+  InputAdornment,
+} from '@mui/material';
+import AccountCircle from '@mui/icons-material/AccountCircle';
+import LockIcon from '@mui/icons-material/Lock';
 
 function LoginPage() {
   const [form, setForm] = useState({ username: '', password: '' });
   const [message, setMessage] = useState('');
-  const navigate = useNavigate();
   const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,50 +34,72 @@ function LoginPage() {
       const data = await res.json();
       if (res.ok) {
         login({ token: data.token, role: data.role, id: data.id });
-        // Redirect based on the user's role
+        setForm({ username: '', password: '' });
+        setMessage('');
         if (data.role === 'parent') navigate('/parent');
         else if (data.role === 'guardian') navigate('/guardian');
         else if (data.role === 'volunteer') navigate('/volunteer');
         else if (data.role === 'admin') navigate('/admin');
-        // Reset form and message
-        setForm({ username: '', password: '' });
-        setMessage('');
       } else {
         setMessage(data.message);
       }
-    } catch (error) {
-      setMessage('Failed to fetch');
-      console.error('Login error:', error);
+    } catch {
+      setMessage('Login failed');
     }
   };
 
   return (
-    <Paper style={{ padding: 20 }}>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <TextField
-          label="Username"
-          name="username"
-          value={form.username}
-          onChange={handleChange}
-          fullWidth
-          margin="normal"
-        />
-        <TextField
-          label="Password"
-          name="password"
-          type="password"
-          value={form.password}
-          onChange={handleChange}
-          fullWidth
-          margin="normal"
-        />
-        <Button type="submit" variant="contained" color="primary">
-          Login
-        </Button>
-      </form>
-      {message && <p>{message}</p>}
-    </Paper>
+    <Container maxWidth="sm" sx={{ mt: 4 }}>
+      <Card
+        elevation={3}
+        sx={{
+          background: 'linear-gradient(to bottom, #f3c13a, #d6a90b 60%, #b8860b)',
+          color: 'black',
+        }}
+      >
+        <CardContent>
+          <Typography variant="h5" gutterBottom>
+            Login
+          </Typography>
+          {message && <Alert severity="error">{message}</Alert>}
+          <Stack component="form" spacing={2} onSubmit={handleSubmit} sx={{ mt: 2 }}>
+            <TextField
+              label="Username"
+              name="username"
+              value={form.username}
+              onChange={handleChange}
+              fullWidth
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <AccountCircle />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              label="Password"
+              name="password"
+              type="password"
+              value={form.password}
+              onChange={handleChange}
+              fullWidth
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <LockIcon />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            {/* Matte black button (from theme override) */}
+            <Button variant="contained" type="submit">
+              Login
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
+    </Container>
   );
 }
 
