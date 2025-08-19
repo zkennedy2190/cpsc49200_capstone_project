@@ -1,51 +1,61 @@
 const express = require('express');
-const path = require('path');
+const cors = require('cors');
 const multer = require('multer');
-const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const path = require('path');
 const { db, init } = require('./db');
 
-init();
+init(); // initialize all tables if they don't exist
 
-const upload = multer({ dest: path.join(__dirname, "uploads") });
 const app = express();
-const PORT = process.env.PORT || 4000;
-const JWT_SECRET = process.env.JWT_SECRET || 'mysecretkey';
-const USERS_FILE = path.join(__dirname, 'users.json');
-const RECORDINGS_FILE = path.join(__dirname, 'recordings.json');
-const RATINGS_FILE = path.join(__dirname, 'ratings.json');
-const SCHEDULES_FILE  = path.join(__dirname, 'schedules.json');
-
-if (!fs.existsSync(RECORDINGS_FILE)) writeJson(RECORDINGS_FILE, []);
-if (!fs.existsSync(RATINGS_FILE)) writeJson(RATINGS_FILE, []);
-if (!fs.existsSync(SCHEDULES_FILE)) writeJson(SCHEDULES_FILE, []);
-
+app.use(cors());
 app.use(express.json());
 
-function readJson(filePath) {
-  return fs.existsSync(filePath)
-    ? JSON.parse(fs.readFileSync(filePath, 'utf-8'))
-    : [];
+const JWT_SECRET = process.env.JWT_SECRET || 'secret_key_change_me';
+
+// Ensure an uploads directory exists for storing audio files
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
 }
-function writeJson(filePath, data) {
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+const upload = multer({ dest: uploadsDir });
+
+// Middleware to verify JWT and attach user info to the request
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (!token) return res.status(401).json({ message: 'Missing token' });
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ message: 'Invalid token' });
+    req.user = user;
+    next();
+  });
 }
 
+// Register a new user
 app.post('/api/register', async (req, res) => {
   const { username, password, role, facilityId } = req.body;
-  const passwordHash = await bcrypt.hash(password, 10);
+  if (!username || !password || !role) {
+    return res.status(400).json({ message: 'Missing required fields' });
+  }
   try {
-    const stmt = db.prepare(
+    const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+    if (existing) {
+      return res.status(400).json({ message: 'Username already exists' });
+    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    db.prepare(
       'INSERT INTO users (username, passwordHash, role, facilityId) VALUES (?, ?, ?, ?)'
-    );
-    stmt.run(username, passwordHash, role, facilityId);
+    ).run(username, passwordHash, role, facilityId || null);
     res.json({ message: 'User registered' });
-  } catch (err) {
-    res.status(400).json({ message: 'Registration error', error: err.message });
+  } catch (error) {
+    res.status(500).json({ message: 'Registration error', error: error.message });
   }
 });
 
+// Log in and return a JWT, role, and user ID
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
@@ -56,129 +66,90 @@ app.post('/api/login', async (req, res) => {
   res.json({ token, role: user.role, id: user.id });
 });
 
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (!token) return res.sendStatus(401);
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
-    req.user = user;
-    next();
-  });
-}
-
-app.post('/api/ratings', authenticateToken, (req, res) => {
-  if (req.user.role !== 'parent') {
-    return res.status(403).json({ message: 'Only parents can submit ratings' });
-  }
-  const { recording, rating, comment, volunteerId } = req.body;
-  if (!recording || !rating) return res.status(400).json({ message: 'Missing data' });
-  const ratings = readJson(RATINGS_FILE);
-  ratings.push({
-    recording,
-    rating,
-    comment,
-    userId: req.user.id,
-    volunteerId,
-    date: new Date().toISOString(),
-  });
-  writeJson(RATINGS_FILE, ratings);
-  res.json({ message: 'Rating saved' });
-});
-
+// Upload a recording (volunteers only)
 app.post('/api/upload', authenticateToken, upload.single('audio'), (req, res) => {
   if (req.user.role !== 'volunteer') {
     return res.status(403).json({ message: 'Only volunteers can upload' });
   }
   const { parentId, childId } = req.body;
+  if (!req.file || !parentId || !childId) {
+    return res.status(400).json({ message: 'Missing required data' });
+  }
   const timestamp = new Date().toISOString();
-  const stmt = db.prepare(
+  const result = db.prepare(
     'INSERT INTO recordings (filePath, parentId, childId, volunteerId, timestamp) VALUES (?, ?, ?, ?, ?)'
-  );
-  const info = stmt.run(req.file.path, parentId, childId, req.user.id, timestamp);
-  res.json({ id: info.lastInsertRowid, message: 'Recording uploaded' });
+  ).run(req.file.path, parentId, childId, req.user.id, timestamp);
+  res.json({ id: result.lastInsertRowid, message: 'Recording uploaded' });
 });
 
+// Retrieve all recordings (authenticated)
 app.get('/api/recordings', authenticateToken, (req, res) => {
-  const recordings = readJson(RECORDINGS_FILE);
-  res.json(recordings);
-});
-
-app.get('/api/recordings/:childId', authenticateToken, (req, res) => {
-  const { childId } = req.params;
-  const recordings = readJson(RECORDINGS_FILE).filter((r) => r.childId === childId);
-  res.json(recordings);
-});
-
-app.get('/api/schedules', authenticateToken, (req, res) => {
-  const schedules = readJson(SCHEDULES_FILE);
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Only admins can access all schedules' });
-  }
-  res.json(schedules);
-});
-
-app.get('/api/schedules/volunteer/:id', authenticateToken, (req, res) => {
-  if (req.user.role !== 'volunteer' && req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Unauthorized' });
-  }
-  const { id } = req.params;
-  const rows = db.prepare('SELECT * FROM schedules WHERE volunteerId = ?').all(id);
+  const rows = db.prepare('SELECT * FROM recordings').all();
   res.json(rows);
 });
 
-app.get('/api/ratings', authenticateToken, (req, res) => {
-  const ratings = readJson(RATINGS_FILE);
-  res.json(ratings);
+// Retrieve recordings for a specific child
+app.get('/api/recordings/:childId', authenticateToken, (req, res) => {
+  const rows = db.prepare('SELECT * FROM recordings WHERE childId = ?').all(req.params.childId);
+  res.json(rows);
 });
 
-app.post('/api/schedules', authenticateToken, (req, res) => {
-  if (req.user.role !== 'volunteer') {
-    return res.status(403).json({ message: 'Only volunteers can create schedules' });
+// Submit a rating/comment (parents only)
+app.post('/api/ratings', authenticateToken, (req, res) => {
+  if (req.user.role !== 'parent') {
+    return res.status(403).json({ message: 'Only parents can submit ratings' });
   }
-  const { parentId, startTime, endTime } = req.body;
-  const stmt = db.prepare('INSERT INTO schedules (volunteerId, parentId, startTime, endTime) VALUES (?, ?, ?, ?)');
-  const info = stmt.run(req.user.id, parentId, startTime, endTime);
-  res.json({ id: info.lastInsertRowid, message: 'Schedule created' });
-});
-
-app.put('/api/schedules/:id/approve', authenticateToken, (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Only admins can approve schedules' });
+  const { recording, rating, comment, volunteerId } = req.body;
+  if (!recording || !rating) {
+    return res.status(400).json({ message: 'Missing rating data' });
   }
-  const { id } = req.params;
-  db.prepare('UPDATE schedules SET status = ? WHERE id = ?').run('approved', id);
-  res.json({ message: 'Schedule approved' });
-});
-
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
-
-// Create schedule (volunteer only, with start/end times)
-app.post('/api/schedules', authenticateToken, (req, res) => {
-  if (req.user.role !== 'volunteer') {
-    return res.status(403).json({ message: 'Only volunteers can create schedules' });
-  }
-  const { parentId, startTime, endTime } = req.body;
-  const stmt = db.prepare(
-    'INSERT INTO schedules (volunteerId, parentId, startTime, endTime) VALUES (?, ?, ?, ?)'
+  db.prepare(
+    'INSERT INTO ratings (recordingId, rating, comment, userId, volunteerId, date) VALUES (?, ?, ?, ?, ?, ?)'
+  ).run(
+    recording,
+    rating,
+    comment || null,
+    req.user.id,
+    volunteerId || null,
+    new Date().toISOString()
   );
-  const info = stmt.run(req.user.id, parentId, startTime, endTime);
-  res.json({ id: info.lastInsertRowid, message: 'Schedule created' });
+  res.json({ message: 'Rating saved' });
 });
 
-// Approve schedule (admin only)
+// Return all ratings
+app.get('/api/ratings', authenticateToken, (req, res) => {
+  const rows = db.prepare('SELECT * FROM ratings').all();
+  res.json(rows);
+});
+
+// Create a schedule (volunteers only)
+app.post('/api/schedules', authenticateToken, (req, res) => {
+  if (req.user.role !== 'volunteer') {
+    return res.status(403).json({ message: 'Only volunteers can create schedules' });
+  }
+  const { parentId, startTime, endTime } = req.body;
+  if (!parentId || !startTime || !endTime) {
+    return res.status(400).json({ message: 'Missing schedule data' });
+  }
+  const result = db.prepare(
+    'INSERT INTO schedules (volunteerId, parentId, startTime, endTime, status) VALUES (?, ?, ?, ?, ?)'
+  ).run(req.user.id, parentId, startTime, endTime, 'pending');
+  res.json({ id: result.lastInsertRowid, message: 'Schedule created' });
+});
+
+// Approve a schedule (admin only)
 app.put('/api/schedules/:id/approve', authenticateToken, (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Only admins can approve schedules' });
   }
-  const { id } = req.params;
-  db.prepare('UPDATE schedules SET status = ? WHERE id = ?').run('approved', id);
+  const result = db.prepare('UPDATE schedules SET status = ? WHERE id = ?').run('approved', req.params.id);
+  if (result.changes === 0) {
+    return res.status(404).json({ message: 'Schedule not found' });
+  }
   res.json({ message: 'Schedule approved' });
 });
 
-// Volunteer or admin can view volunteer schedules
+// Retrieve schedules for a volunteer (volunteer or admin)
 app.get('/api/schedules/volunteer/:id', authenticateToken, (req, res) => {
   if (req.user.role !== 'volunteer' && req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Unauthorized' });
@@ -187,7 +158,7 @@ app.get('/api/schedules/volunteer/:id', authenticateToken, (req, res) => {
   res.json(rows);
 });
 
-// Admin can view all schedules
+// Retrieve all schedules (admin only)
 app.get('/api/schedules', authenticateToken, (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Only admins can access all schedules' });
@@ -196,26 +167,35 @@ app.get('/api/schedules', authenticateToken, (req, res) => {
   res.json(rows);
 });
 
-// Create notification (server can call this)
+// Create a notification (for internal use)
 app.post('/api/notifications', authenticateToken, (req, res) => {
   const { userId, type, message } = req.body;
-  const stmt = db.prepare(
+  if (!userId || !type || !message) {
+    return res.status(400).json({ message: 'Missing notification data' });
+  }
+  db.prepare(
     'INSERT INTO notifications (userId, type, message, isRead, date) VALUES (?, ?, ?, 0, ?)'
-  );
-  stmt.run(userId, type, message, new Date().toISOString());
+  ).run(userId, type, message, new Date().toISOString());
   res.json({ message: 'Notification created' });
 });
 
-// Get unread notifications for logged-in user
+// Get unread notifications for the logged-in user
 app.get('/api/notifications', authenticateToken, (req, res) => {
-  const rows = db
-    .prepare('SELECT * FROM notifications WHERE userId = ? AND isRead = 0')
-    .all(req.user.id);
+  const rows = db.prepare('SELECT * FROM notifications WHERE userId = ? AND isRead = 0').all(req.user.id);
   res.json(rows);
 });
 
-// Mark notification as read
+// Mark a notification as read
 app.put('/api/notifications/:id/read', authenticateToken, (req, res) => {
-  db.prepare('UPDATE notifications SET isRead = 1 WHERE id = ?').run(req.params.id);
+  const result = db.prepare('UPDATE notifications SET isRead = 1 WHERE id = ?').run(req.params.id);
+  if (result.changes === 0) {
+    return res.status(404).json({ message: 'Notification not found' });
+  }
   res.json({ message: 'Notification marked as read' });
+});
+
+// Start the server
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });

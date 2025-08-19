@@ -13,76 +13,70 @@ function SchedulePage() {
   const { user } = useContext(AuthContext);
   const [schedules, setSchedules] = useState([]);
   const [parentId, setParentId] = useState('');
-  const [dateTime, setDateTime] = useState('');
+  const [startTime, setStartTime] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [message, setMessage] = useState('');
-  const [volunteerAverages, setVolunteerAverages] = useState({});
+  const [averages, setAverages] = useState({});
 
   // Fetch schedules for this volunteer
   useEffect(() => {
-    if (!user) return;
-    async function fetchSchedules() {
-      const res = await fetch(
-        `http://localhost:4000/api/schedules/volunteer/${user.id}`,
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
-      const data = await res.json();
-      setSchedules(data);
-    }
-    fetchSchedules();
+    fetch(`http://localhost:4000/api/schedules/volunteer/${user.id}`, {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => setSchedules(data));
   }, [user]);
 
-  // Compute averages for volunteers
+  // Fetch ratings to compute volunteer averages
   useEffect(() => {
-    if (!user) return;
-    async function fetchRatings() {
-      const res = await fetch('http://localhost:4000/api/ratings', {
-        headers: { Authorization: `Bearer ${user.token}` },
+    fetch('http://localhost:4000/api/ratings', {
+      headers: { Authorization: `Bearer ${user.token}` },
+    })
+      .then((res) => res.json())
+      .then((ratings) => {
+        const totals = {};
+        ratings.forEach((r) => {
+          const vid = r.volunteerId;
+          if (!totals[vid]) totals[vid] = { sum: 0, count: 0 };
+          totals[vid].sum += Number(r.rating);
+          totals[vid].count += 1;
+        });
+        const avgs = {};
+        Object.keys(totals).forEach(
+          (vid) => (avgs[vid] = totals[vid].sum / totals[vid].count)
+        );
+        setAverages(avgs);
       });
-      const ratings = await res.json();
-      const totals = {};
-      ratings.forEach((r) => {
-        const vid = r.volunteerId;
-        if (!totals[vid]) {
-          totals[vid] = { sum: 0, count: 0 };
-        }
-        totals[vid].sum += Number(r.rating);
-        totals[vid].count += 1;
-      });
-      const averages = {};
-      Object.keys(totals).forEach(
-        (vid) => (averages[vid] = totals[vid].sum / totals[vid].count)
-      );
-      setVolunteerAverages(averages);
-    }
-    fetchRatings();
   }, [user]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    const res = await fetch('http://localhost:4000/api/schedules', {
+    fetch('http://localhost:4000/api/schedules', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${user.token}`,
       },
-      body: JSON.stringify({
-        volunteerId: user.id,
-        parentId,
-        dateTime,
-      }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setMessage('Schedule created');
-      setSchedules((prev) => [
-        ...prev,
-        { id: data.id, parentId, dateTime },
-      ]);
-      setParentId('');
-      setDateTime('');
-    } else {
-      setMessage(data.message);
-    }
+      body: JSON.stringify({ parentId, startTime, endTime }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setMessage(data.message);
+        setSchedules((prev) => [
+          ...prev,
+          {
+            id: data.id,
+            volunteerId: user.id,
+            parentId,
+            startTime,
+            endTime,
+            status: 'pending',
+          },
+        ]);
+        setParentId('');
+        setStartTime('');
+        setEndTime('');
+      });
   };
 
   return (
@@ -97,10 +91,19 @@ function SchedulePage() {
           margin="normal"
         />
         <TextField
-          label="Date and Time"
+          label="Start Time"
           type="datetime-local"
-          value={dateTime}
-          onChange={(e) => setDateTime(e.target.value)}
+          value={startTime}
+          onChange={(e) => setStartTime(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          fullWidth
+          margin="normal"
+        />
+        <TextField
+          label="End Time"
+          type="datetime-local"
+          value={endTime}
+          onChange={(e) => setEndTime(e.target.value)}
           InputLabelProps={{ shrink: true }}
           fullWidth
           margin="normal"
@@ -114,19 +117,19 @@ function SchedulePage() {
         <TableHead>
           <TableRow>
             <TableCell>Parent ID</TableCell>
-            <TableCell>Date & Time</TableCell>
-            <TableCell>Average Rating</TableCell>
+            <TableCell>Start – End</TableCell>
+            <TableCell>Status</TableCell>
+            <TableCell>Avg Rating</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
           {schedules.map((session) => (
             <TableRow key={session.id}>
               <TableCell>{session.parentId}</TableCell>
-              <TableCell>{session.dateTime}</TableCell>
+              <TableCell>{session.startTime} – {session.endTime}</TableCell>
+              <TableCell>{session.status}</TableCell>
               <TableCell>
-                {volunteerAverages[user.id]
-                  ? volunteerAverages[user.id].toFixed(1)
-                  : 'N/A'}
+                {averages[user.id] ? averages[user.id].toFixed(1) : 'N/A'}
               </TableCell>
             </TableRow>
           ))}
