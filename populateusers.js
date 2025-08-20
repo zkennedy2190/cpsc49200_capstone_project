@@ -1,10 +1,11 @@
-// populate-test-users.js
-// Node 18+ is required because it uses the Fetch API.
+// populate-users.js
+// Requires Node.js 18+ for native fetch support.
 
-// Replace with the base URL of your deployed API.  The full path should end with /api/register.
-const baseApiUrl = 'https://<your-app-name>.azurewebsites.net/api/register';
+// Base API URL for your Azure backend
+const baseApiUrl =
+  'https://cpsc49200capstonebackend-chgrc2e5aae7cvdp.centralus-01.azurewebsites.net/api/register';
 
-// Define the eight users and roles you want to create; all use password "test".
+// Define the users to create (same password "test" for all)
 const usersToCreate = [
   { username: 'testadmin1', password: 'test', role: 'admin' },
   { username: 'testadmin2', password: 'test', role: 'admin' },
@@ -16,8 +17,7 @@ const usersToCreate = [
   { username: 'testvolunteer2', password: 'test', role: 'volunteer' },
 ];
 
-// Register a single user and log success or failure.
-// Handles cases where the API returns text instead of JSON.
+// Helper function to register a single user
 async function registerUser(user) {
   const response = await fetch(baseApiUrl, {
     method: 'POST',
@@ -26,6 +26,7 @@ async function registerUser(user) {
   });
 
   const contentType = response.headers.get('content-type');
+  // Parse JSON if possible, fall back to text for HTML/error pages
   const result = contentType && contentType.includes('application/json')
     ? await response.json()
     : await response.text();
@@ -41,7 +42,7 @@ async function registerUser(user) {
   }
 }
 
-// Main routine that iterates over all test users.
+// Main routine
 (async () => {
   for (const user of usersToCreate) {
     try {
