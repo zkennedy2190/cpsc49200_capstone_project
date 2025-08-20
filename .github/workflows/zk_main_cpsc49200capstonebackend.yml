@@ -1,14 +1,14 @@
-# .github/workflows/azure-deploy-backend.yml
+# Build and deploy the Node.js backend to Azure Web App cpsc49200capstonebackend
 name: Build and deploy Node.js app to Azure Web App - cpsc49200capstonebackend
 
 on:
   push:
     branches:
-      - zk_main             # update if your deployment branch differs
+      - zk_main
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_PACKAGE_PATH: backend   # directory containing your Express app
+  AZURE_WEBAPP_PACKAGE_PATH: backend
   NODE_VERSION: '20.x'
 
 jobs:
@@ -19,10 +19,8 @@ jobs:
       contents: read
 
     steps:
-      # Check out the repository
       - uses: actions/checkout@v4
 
-      # Set up Node.js (with caching of backend/package-lock.json)
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -30,15 +28,13 @@ jobs:
           cache: 'npm'
           cache-dependency-path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/package-lock.json
 
-      # Install dependencies and build inside the backend directory
       - name: Install dependencies and build backend
         run: |
           cd ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
           npm install
           npm run build --if-present
-          # omit npm test to avoid failure from the default test script
+          # tests omitted to avoid failure on default script
 
-      # Log in to Azure using your service principal credentials
       - name: Login to Azure
         uses: azure/login@v2
         with:
@@ -46,7 +42,6 @@ jobs:
           tenant-id:     ${{ secrets.AZUREAPPSERVICE_TENANTID_9C3A9C8F85CB43DF89DF6DB36975789F }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_4215DC3EA0D649A9897CB06A3EC04320 }}
 
-      # Deploy the backend folder directly to Azure Web App
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:

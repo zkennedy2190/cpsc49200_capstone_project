@@ -213,14 +213,11 @@ app.put('/api/notifications/:id/read', authenticateToken, (req, res) => {
 });
 
 // -------------------------------------------------------------------
-// Books API: return all books from the books table. This endpoint does
-// not require authentication because the Book Selection page is
-// publicly accessible. The books table must already exist and be
-// populated (e.g. via an import script).
+// Books API: return all books from the books table.  The books table
+// must already exist and be populated (e.g. via an import script).
 app.get('/api/books', (req, res) => {
   try {
-    // Try to select synopsis and coverUrl if those columns exist. If they don't, this
-    // query will throw and we'll fall back to the basic fields.
+    // Try to select synopsis and coverUrl if those columns exist.
     let rows;
     try {
       rows = db
@@ -272,7 +269,7 @@ app.get('/api/children/:parentId', authenticateToken, (req, res) => {
     .all(req.params.parentId);
   const combined = new Set([
     ...scheduleChildren.map((r) => r.childId),
-    ...recordingChildren.map((r) => r.childId),
+    ...recordingChildren.map((r) => r.childId)
   ]);
   res.json(Array.from(combined));
 });
@@ -285,7 +282,12 @@ app.get('/api/users', authenticateToken, (req, res) => {
   const users = db
     .prepare('SELECT id, username, role, facilityId FROM users')
     .all()
-    .map((u) => ({ id: u.id, username: u.username, role: u.role, facilityId: u.facilityId }));
+    .map((u) => ({
+      id: u.id,
+      username: u.username,
+      role: u.role,
+      facilityId: u.facilityId
+    }));
   res.json(users);
 });
 
@@ -303,7 +305,7 @@ app.delete('/api/users/:id', authenticateToken, (req, res) => {
 
 /* ------------------------------------------------------------------ */
 
-// Start the server
+// Start the server on the port provided by Azure (fallback to 4000 locally)
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
