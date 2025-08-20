@@ -1,3 +1,4 @@
+// frontend/src/pages/BookSelectionPage.js
 import React, { useState, useEffect } from 'react';
 import {
   Container,
@@ -11,15 +12,14 @@ import {
   DialogContent,
   DialogContentText,
 } from '@mui/material';
+import { apiFetch } from '../api';
 
 /**
- * BookSelectionPage (synopsis only)
+ * BookSelectionPage
  *
- * This component fetches a list of children’s books from the back‑end and displays
- * them in a list. Each item shows the book title and author. On hover, a
- * tooltip shows a truncated synopsis; clicking an item opens a dialog with
- * the full synopsis. Cover images are deliberately excluded to simplify the
- * page and because no `coverUrl` field is present in the data.
+ * Fetches children’s books from the back‑end and displays them in a list.
+ * Shows title and author; clicking opens a synopsis dialog.  Uses the apiFetch
+ * helper so the API base URL comes from environment or defaults to localhost.
  */
 function BookSelectionPage() {
   const [books, setBooks] = useState([]);
@@ -27,7 +27,7 @@ function BookSelectionPage() {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    fetch('http://localhost:4000/api/books')
+    apiFetch('/api/books')
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -65,26 +65,29 @@ function BookSelectionPage() {
       </Typography>
       <List>
         {books.map((book) => (
-          <Tooltip
+          <ListItem
+            button
             key={book.id}
-            title={getSynopsisPreview(book.synopsis)}
-            arrow
-            placement="right"
+            onClick={() => handleOpen(book)}
+            sx={{ mb: 1 }}
           >
-            <ListItem button onClick={() => handleOpen(book)}>
-              <ListItemText primary={book.title} secondary={book.author} />
-            </ListItem>
-          </Tooltip>
+            <Tooltip title={getSynopsisPreview(book.synopsis)} placement="right">
+              <ListItemText
+                primary={book.title}
+                secondary={book.author}
+              />
+            </Tooltip>
+          </ListItem>
         ))}
       </List>
       {selectedBook && (
-        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+        <Dialog open={open} onClose={handleClose}>
           <DialogTitle>{selectedBook.title}</DialogTitle>
-          <DialogContent dividers>
+          <DialogContent>
             <Typography variant="subtitle1" gutterBottom>
               {selectedBook.author}
             </Typography>
-            <DialogContentText>
+            <DialogContentText sx={{ whiteSpace: 'pre-line' }}>
               {selectedBook.synopsis || 'No synopsis available.'}
             </DialogContentText>
           </DialogContent>

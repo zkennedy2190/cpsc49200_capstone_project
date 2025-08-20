@@ -1,3 +1,4 @@
+// frontend/src/pages/RecordingsLibraryPage.js
 import React, { useEffect, useState, useContext } from 'react';
 import {
   Container,
@@ -12,9 +13,11 @@ import {
   Alert,
 } from '@mui/material';
 import { AuthContext } from '../AuthContext';
+import { apiFetch } from '../api';
 
 /**
- * Library of recordings with rating and comment functionality.
+ * Displays uploaded recordings and allows parents to submit ratings/comments.
+ * Uses apiFetch to target the correct backend URL.
  */
 function RecordingsLibraryPage() {
   const { user } = useContext(AuthContext);
@@ -24,7 +27,7 @@ function RecordingsLibraryPage() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    fetch('http://localhost:4000/api/recordings', {
+    apiFetch('/api/recordings', {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -33,7 +36,7 @@ function RecordingsLibraryPage() {
   }, [user]);
 
   const submitRating = async (file) => {
-    await fetch('http://localhost:4000/api/ratings', {
+    await apiFetch('/api/ratings', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -52,39 +55,49 @@ function RecordingsLibraryPage() {
   };
 
   return (
-    <Container sx={{ mt: 4 }}>
+    <Container sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>
         Recordings Library
       </Typography>
       {message && <Alert severity="success">{message}</Alert>}
-      <Grid container spacing={3}>
+      <Grid container spacing={2}>
         {files.map((file) => (
           <Grid item xs={12} sm={6} md={4} key={file.id}>
-            <Card elevation={2}>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
-                <Typography variant="h6">Recording #{file.id}</Typography>
-                <audio
-                  controls
-                  src={`http://localhost:4000/${file.filePath}`}
-                  style={{ width: '100%', marginTop: 8 }}
+                <Typography variant="h6" gutterBottom>
+                  Recording #{file.id}
+                </Typography>
+                <Typography variant="subtitle2">
+                  Volunteer #{file.volunteerId}
+                </Typography>
+                <Rating
+                  value={ratings[file.id] || 0}
+                  precision={0.5}
+                  onChange={(_, newVal) =>
+                    setRatings((prev) => ({ ...prev, [file.id]: newVal }))
+                  }
+                  sx={{ mt: 1 }}
                 />
-                <Stack spacing={1} mt={2}>
-                  <Rating
-                    name={`rating-${file.id}`}
-                    value={Number(ratings[file.id] || 0)}
-                    onChange={(e, newVal) =>
-                      setRatings((prev) => ({ ...prev, [file.id]: newVal }))
-                    }
-                  />
-                    <TextField
-                      label="Comment"
-                      size="small"
-                      value={comments[file.id] || ''}
-                      onChange={(e) =>
-                        setComments((prev) => ({ ...prev, [file.id]: e.target.value }))
-                      }
-                    />
-                  <Button variant="contained" onClick={() => submitRating(file)}>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  size="small"
+                  label="Comment"
+                  value={comments[file.id] || ''}
+                  onChange={(e) =>
+                    setComments((prev) => ({
+                      ...prev,
+                      [file.id]: e.target.value,
+                    }))
+                  }
+                  sx={{ mt: 1 }}
+                />
+                <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
+                  <Button
+                    variant="contained"
+                    onClick={() => submitRating(file)}
+                  >
                     Submit
                   </Button>
                 </Stack>
