@@ -2,7 +2,26 @@ const fs = require('fs');
 // This script seeds the SQLite database with example data for testing the role-based dashboards.
 // It inserts schedules, recordings, and ratings for the sample users you mentioned.
 
-const { db } = require('./backend/db');
+// Determine the correct path to db.js automatically. If this script
+// is run from the project root, './backend/db' exists. If it is run
+// from within the 'backend' folder, use './db'.
+let dbModule;
+try {
+  // Attempt to load the db module from the project root perspective
+  dbModule = require('./backend/db');
+} catch (e) {
+  // Fallback: if that fails, assume we're in the backend directory
+  dbModule = require('./db');
+}
+const { db, init } = dbModule;
+
+// Ensure the required tables exist. If the backend has already run,
+// this call is harmless because the CREATE TABLE statements are idempotent.
+// Without this, running the script on a brand new database file will
+// result in missing table errors (e.g. "no such table: users").
+if (typeof init === 'function') {
+  init();
+}
 
 /**
  * Helper to get a user's ID by username. Returns null if not found.
