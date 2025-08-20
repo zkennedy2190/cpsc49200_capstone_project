@@ -197,6 +197,97 @@ app.put('/api/notifications/:id/read', authenticateToken, (req, res) => {
   res.json({ message: 'Notification marked as read' });
 });
 
+// -------------------------------------------------------------------
+// Books API: return all books from the books table. This endpoint does
+// not require authentication because the Book Selection page is
+// publicly accessible. The books table must already exist and be
+// populated (e.g. via an import script).
+app.get('/api/books', (req, res) => {
+  try {
+    // Try to select synopsis and coverUrl if those columns exist. If they don't, this
+    // query will throw and we'll fall back to the basic fields.
+    let rows;
+    try {
+      rows = db
+        .prepare('SELECT id, title, author, synopsis, coverUrl FROM books ORDER BY title')
+        .all();
+    } catch (innerErr) {
+      // Fall back to selecting only the basic fields if synopsis/coverUrl are missing
+      rows = db.prepare('SELECT id, title, author FROM books ORDER BY title').all();
+    }
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: 'Error retrieving books', error: error.message });
+  }
+});
+
+/* ----------------- Added endpoints for dashboards ------------------ */
+
+// Get schedules for a parent (parent or admin)
+app.get('/api/schedules/parent/:id', authenticateToken, (req, res) => {
+  if (parseInt(req.user.id, 10) !== parseInt(req.params.id, 10) && req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Unauthorized' });
+  }
+  const rows = db.prepare('SELECT * FROM schedules WHERE parentId = ?').all(req.params.id);
+  res.json(rows);
+});
+
+// Get recordings for a parent (parent or admin)
+app.get('/api/recordings/parent/:id', authenticateToken, (req, res) => {
+  if (parseInt(req.user.id, 10) !== parseInt(req.params.id, 10) && req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Unauthorized' });
+  }
+  const rows = db.prepare('SELECT * FROM recordings WHERE parentId = ?').all(req.params.id);
+  res.json(rows);
+});
+
+// Get unique children identifiers for a parent (parent or admin)
+app.get('/api/children/:parentId', authenticateToken, (req, res) => {
+  if (
+    parseInt(req.user.id, 10) !== parseInt(req.params.parentId, 10) &&
+    req.user.role !== 'admin'
+  ) {
+    return res.status(403).json({ message: 'Unauthorized' });
+  }
+  const scheduleChildren = db
+    .prepare('SELECT DISTINCT childId FROM schedules WHERE parentId = ?')
+    .all(req.params.parentId);
+  const recordingChildren = db
+    .prepare('SELECT DISTINCT childId FROM recordings WHERE parentId = ?')
+    .all(req.params.parentId);
+  const combined = new Set([
+    ...scheduleChildren.map((r) => r.childId),
+    ...recordingChildren.map((r) => r.childId),
+  ]);
+  res.json(Array.from(combined));
+});
+
+// List all users (admin only)
+app.get('/api/users', authenticateToken, (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Only admins can access users' });
+  }
+  const users = db
+    .prepare('SELECT id, username, role, facilityId FROM users')
+    .all()
+    .map((u) => ({ id: u.id, username: u.username, role: u.role, facilityId: u.facilityId }));
+  res.json(users);
+});
+
+// Delete a user (admin only)
+app.delete('/api/users/:id', authenticateToken, (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Only admins can delete users' });
+  }
+  const result = db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
+  if (result.changes === 0) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+  res.json({ message: 'User deleted' });
+});
+
+/* ------------------------------------------------------------------ */
+
 // Start the server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
