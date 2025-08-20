@@ -26,10 +26,12 @@ function GuardianDashboard() {
   const [childrenIds, setChildrenIds] = useState([]);
   const [selectedChild, setSelectedChild] = useState('all');
 
+  // Use a gold accent color for cards to stand out on the dark background
+  const CARD_STYLE = { backgroundColor: '#FBC02D', color: '#000' };
+
   useEffect(() => {
     // Fetch schedules for this guardian (treated like parent)
-    // Use a relative path so the React dev server's proxy forwards
-    fetch(`/api/schedules/parent/${user.id}`, {
+    fetch(`http://localhost:4000/api/schedules/parent/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -42,8 +44,8 @@ function GuardianDashboard() {
       })
       .catch(() => setSchedules([]));
 
-    // Fetch recordings for this guardian using a relative path
-    fetch(`/api/recordings/parent/${user.id}`, {
+    // Fetch recordings for this guardian
+    fetch(`http://localhost:4000/api/recordings/parent/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -56,8 +58,8 @@ function GuardianDashboard() {
       })
       .catch(() => setRecordings([]));
 
-    // Fetch unique child IDs for this guardian via relative path
-    fetch(`/api/children/${user.id}`, {
+    // Fetch unique child IDs for this guardian
+    fetch(`http://localhost:4000/api/children/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -117,7 +119,7 @@ function GuardianDashboard() {
       )}
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={CARD_STYLE}>
             <CardContent>
               <Typography variant="h6">Upcoming Sessions</Typography>
               <Typography variant="h3">{filteredSchedules.length}</Typography>
@@ -133,7 +135,7 @@ function GuardianDashboard() {
           </Card>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={CARD_STYLE}>
             <CardContent>
               <Typography variant="h6">Available Recordings</Typography>
               <Typography variant="h3">{filteredRecordings.length}</Typography>
@@ -161,7 +163,7 @@ function GuardianDashboard() {
           <Typography>No approved sessions scheduled.</Typography>
         ) : (
           filteredSchedules.map((session) => (
-            <Card key={session.id} sx={{ mb: 2 }}>
+            <Card key={session.id} sx={{ mb: 2, ...CARD_STYLE }}>
               <CardContent>
                 <Typography variant="subtitle1">
                   Volunteer #{session.volunteerId}

@@ -20,9 +20,12 @@ function AdminDashboard() {
   const [pending, setPending] = useState([]);
   const [users, setUsers] = useState([]);
 
+  // Use a gold accent color for cards so they are visible on a dark background
+  const CARD_STYLE = { backgroundColor: '#FBC02D', color: '#000' };
+
   useEffect(() => {
-    // Fetch all schedules and filter pending via relative path
-    fetch('/api/schedules', {
+    // Fetch all schedules and filter pending
+    fetch('http://localhost:4000/api/schedules', {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -35,8 +38,8 @@ function AdminDashboard() {
       })
       .catch(() => setPending([]));
 
-    // Fetch all users via relative path
-    fetch('/api/users', {
+    // Fetch all users
+    fetch('http://localhost:4000/api/users', {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -51,7 +54,7 @@ function AdminDashboard() {
   }, [user]);
 
   const approve = async (id) => {
-    await fetch(`/api/schedules/${id}/approve`, {
+    await fetch(`http://localhost:4000/api/schedules/${id}/approve`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${user.token}` },
     });
@@ -59,7 +62,7 @@ function AdminDashboard() {
   };
 
   const reject = async (id) => {
-    await fetch(`/api/schedules/${id}/reject`, {
+    await fetch(`http://localhost:4000/api/schedules/${id}/reject`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${user.token}` },
     });
@@ -68,7 +71,7 @@ function AdminDashboard() {
 
   const deleteUser = async (id) => {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
-    await fetch(`/api/users/${id}`, {
+    await fetch(`http://localhost:4000/api/users/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${user.token}` },
     });
@@ -89,7 +92,7 @@ function AdminDashboard() {
           <Typography>No pending sessions.</Typography>
         ) : (
           pending.map((session) => (
-            <Card key={session.id} sx={{ mb: 2 }}>
+            <Card key={session.id} sx={{ mb: 2, ...CARD_STYLE }}>
               <CardContent>
                 <Typography variant="subtitle1">
                   Volunteer #{session.volunteerId} → Parent #{session.parentId}
@@ -127,7 +130,7 @@ function AdminDashboard() {
           <Typography>No users found.</Typography>
         ) : (
           users.map((u) => (
-            <Card key={u.id} sx={{ mb: 2 }}>
+            <Card key={u.id} sx={{ mb: 2, ...CARD_STYLE }}>
               <CardContent>
                 <Typography variant="body1">
                   {u.username} ({u.role})

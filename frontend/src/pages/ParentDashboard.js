@@ -27,9 +27,11 @@ function ParentDashboard() {
   const [childrenIds, setChildrenIds] = useState([]);
   const [selectedChild, setSelectedChild] = useState('all');
 
+  // Use a gold accent color so cards stand out against the dark background
+  const CARD_STYLE = { backgroundColor: '#FBC02D', color: '#000' };
+
   useEffect(() => {
-    // Fetch schedules for this parent via relative path. The proxy will forward
-    // the request to the backend running on port 4000.
+    // Fetch schedules for this parent via relative path
     fetch(`/api/schedules/parent/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
@@ -121,7 +123,7 @@ function ParentDashboard() {
       )}
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={CARD_STYLE}>
             <CardContent>
               <Typography variant="h6">Upcoming Sessions</Typography>
               <Typography variant="h3">{filteredSchedules.length}</Typography>
@@ -137,7 +139,7 @@ function ParentDashboard() {
           </Card>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Card>
+          <Card sx={CARD_STYLE}>
             <CardContent>
               <Typography variant="h6">Available Recordings</Typography>
               <Typography variant="h3">{filteredRecordings.length}</Typography>
@@ -165,7 +167,7 @@ function ParentDashboard() {
           <Typography>No approved sessions scheduled.</Typography>
         ) : (
           filteredSchedules.map((session) => (
-            <Card key={session.id} sx={{ mb: 2 }}>
+            <Card key={session.id} sx={{ mb: 2, ...CARD_STYLE }}>
               <CardContent>
                 <Typography variant="subtitle1">
                   Volunteer #{session.volunteerId}
