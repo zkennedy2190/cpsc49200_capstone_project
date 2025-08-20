@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AuthContext } from '../AuthContext';
+import { apiFetch } from '../api';
 import {
   Container,
   Typography,
@@ -27,12 +28,9 @@ function ParentDashboard() {
   const [childrenIds, setChildrenIds] = useState([]);
   const [selectedChild, setSelectedChild] = useState('all');
 
-  // Use a gold accent color so cards stand out against the dark background
-  const CARD_STYLE = { backgroundColor: '#FBC02D', color: '#000' };
-
   useEffect(() => {
-    // Fetch schedules for this parent via relative path
-    fetch(`/api/schedules/parent/${user.id}`, {
+    // Fetch schedules for this parent
+    apiFetch(`/api/schedules/parent/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -45,8 +43,8 @@ function ParentDashboard() {
       })
       .catch(() => setSchedules([]));
 
-    // Fetch recordings for this parent via relative path
-    fetch(`/api/recordings/parent/${user.id}`, {
+    // Fetch recordings for this parent
+    apiFetch(`/api/recordings/parent/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -59,8 +57,8 @@ function ParentDashboard() {
       })
       .catch(() => setRecordings([]));
 
-    // Fetch unique child IDs via relative path
-    fetch(`/api/children/${user.id}`, {
+    // Fetch unique child IDs
+    apiFetch(`/api/children/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -123,7 +121,7 @@ function ParentDashboard() {
       )}
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
-          <Card sx={CARD_STYLE}>
+          <Card>
             <CardContent>
               <Typography variant="h6">Upcoming Sessions</Typography>
               <Typography variant="h3">{filteredSchedules.length}</Typography>
@@ -139,7 +137,7 @@ function ParentDashboard() {
           </Card>
         </Grid>
         <Grid item xs={12} md={6}>
-          <Card sx={CARD_STYLE}>
+          <Card>
             <CardContent>
               <Typography variant="h6">Available Recordings</Typography>
               <Typography variant="h3">{filteredRecordings.length}</Typography>
@@ -167,7 +165,7 @@ function ParentDashboard() {
           <Typography>No approved sessions scheduled.</Typography>
         ) : (
           filteredSchedules.map((session) => (
-            <Card key={session.id} sx={{ mb: 2, ...CARD_STYLE }}>
+            <Card key={session.id} sx={{ mb: 2 }}>
               <CardContent>
                 <Typography variant="subtitle1">
                   Volunteer #{session.volunteerId}

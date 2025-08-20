@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../AuthContext';
+import { apiFetch } from '../api';
 import {
   Container,
   Typography,
@@ -20,12 +21,9 @@ function VolunteerDashboard() {
   const [schedules, setSchedules] = useState([]);
   const [avgRating, setAvgRating] = useState(null);
 
-  // Use a gold accent color for cards so they stand out against the dark background.
-  const CARD_STYLE = { backgroundColor: '#FBC02D', color: '#000' };
-
   useEffect(() => {
     // Fetch schedules for this volunteer
-    fetch(`http://localhost:4000/api/schedules/volunteer/${user.id}`, {
+    apiFetch(`/api/schedules/volunteer/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -42,7 +40,7 @@ function VolunteerDashboard() {
       .catch(() => setSchedules([]));
 
     // Fetch all ratings to compute volunteer's average rating
-    fetch('http://localhost:4000/api/ratings', {
+    apiFetch('/api/ratings', {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -78,7 +76,7 @@ function VolunteerDashboard() {
       <Grid container spacing={3}>
         {/* Summary cards */}
         <Grid item xs={12} md={4}>
-          <Card sx={CARD_STYLE}>
+          <Card>
             <CardContent>
               <Typography variant="h6">Upcoming Sessions</Typography>
               <Typography variant="h3">
@@ -96,7 +94,7 @@ function VolunteerDashboard() {
           </Card>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Card sx={CARD_STYLE}>
+          <Card>
             <CardContent>
               <Typography variant="h6">Average Rating</Typography>
               <Typography variant="h3">{avgRating ?? 'N/A'}</Typography>
@@ -104,7 +102,7 @@ function VolunteerDashboard() {
           </Card>
         </Grid>
         <Grid item xs={12} md={4}>
-          <Card sx={CARD_STYLE}>
+          <Card>
             <CardContent>
               <Typography variant="h6">Record a New Story</Typography>
               <Button
@@ -128,7 +126,7 @@ function VolunteerDashboard() {
           <Typography>No approved sessions scheduled.</Typography>
         ) : (
           approvedSessions.map((session) => (
-            <Card key={session.id} sx={{ mb: 2, ...CARD_STYLE }}>
+            <Card key={session.id} sx={{ mb: 2 }}>
               <CardContent>
                 <Typography variant="subtitle1">
                   Parent #{session.parentId}

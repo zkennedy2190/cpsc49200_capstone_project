@@ -1,12 +1,13 @@
-// frontend/src/pages/AdminDashboard.js
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../AuthContext';
+import { apiFetch } from '../api';
 import {
   Container,
   Typography,
   Card,
   CardContent,
   Button,
+  Grid,
   Stack,
   Box,
 } from '@mui/material';
@@ -20,12 +21,9 @@ function AdminDashboard() {
   const [pending, setPending] = useState([]);
   const [users, setUsers] = useState([]);
 
-  // Use a gold accent color for cards so they are visible on a dark background
-  const CARD_STYLE = { backgroundColor: '#FBC02D', color: '#000' };
-
   useEffect(() => {
     // Fetch all schedules and filter pending
-    fetch('http://localhost:4000/api/schedules', {
+    apiFetch('/api/schedules', {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -39,7 +37,7 @@ function AdminDashboard() {
       .catch(() => setPending([]));
 
     // Fetch all users
-    fetch('http://localhost:4000/api/users', {
+    apiFetch('/api/users', {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -54,7 +52,7 @@ function AdminDashboard() {
   }, [user]);
 
   const approve = async (id) => {
-    await fetch(`http://localhost:4000/api/schedules/${id}/approve`, {
+    await apiFetch(`/api/schedules/${id}/approve`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${user.token}` },
     });
@@ -62,7 +60,7 @@ function AdminDashboard() {
   };
 
   const reject = async (id) => {
-    await fetch(`http://localhost:4000/api/schedules/${id}/reject`, {
+    await apiFetch(`/api/schedules/${id}/reject`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${user.token}` },
     });
@@ -71,7 +69,7 @@ function AdminDashboard() {
 
   const deleteUser = async (id) => {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
-    await fetch(`http://localhost:4000/api/users/${id}`, {
+    await apiFetch(`/api/users/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${user.token}` },
     });
@@ -92,7 +90,7 @@ function AdminDashboard() {
           <Typography>No pending sessions.</Typography>
         ) : (
           pending.map((session) => (
-            <Card key={session.id} sx={{ mb: 2, ...CARD_STYLE }}>
+            <Card key={session.id} sx={{ mb: 2 }}>
               <CardContent>
                 <Typography variant="subtitle1">
                   Volunteer #{session.volunteerId} → Parent #{session.parentId}
@@ -102,7 +100,10 @@ function AdminDashboard() {
                   {new Date(session.endTime).toLocaleString()}
                 </Typography>
                 <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
-                  <Button variant="contained" onClick={() => approve(session.id)}>
+                  <Button
+                    variant="contained"
+                    onClick={() => approve(session.id)}
+                  >
                     Approve
                   </Button>
                   <Button
@@ -127,7 +128,7 @@ function AdminDashboard() {
           <Typography>No users found.</Typography>
         ) : (
           users.map((u) => (
-            <Card key={u.id} sx={{ mb: 2, ...CARD_STYLE }}>
+            <Card key={u.id} sx={{ mb: 2 }}>
               <CardContent>
                 <Typography variant="body1">
                   {u.username} ({u.role})
