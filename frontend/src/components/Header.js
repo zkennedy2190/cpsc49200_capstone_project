@@ -1,3 +1,4 @@
+// frontend/src/components/Header.js
 import React, { useContext, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AppBar from '@mui/material/AppBar';
@@ -77,6 +78,8 @@ function Header() {
           )}
           {user?.role === 'volunteer' && navLink('/volunteer', 'Volunteer Dashboard')}
           {user?.role === 'volunteer' && navLink('/schedule', 'Schedule')}
+          {/* ADDED: link to the actual recording tool */}
+          {user?.role === 'volunteer' && navLink('/record', 'Record')}
           {user?.role === 'parent' && navLink('/parent', 'Parent Dashboard')}
           {user?.role === 'guardian' && navLink('/guardian', 'Guardian Dashboard')}
           {user?.role === 'admin' && navLink('/admin', 'Admin Dashboard')}

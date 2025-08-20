@@ -6,6 +6,7 @@ import PrivateRoute from './PrivateRoute';
 import Header from './components/Header';
 import Footer from './components/Footer';
 
+
 // Pages
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -18,6 +19,7 @@ import VolunteerDashboard from './pages/VolunteerDashboard';
 import ParentDashboard from './pages/ParentDashboard';
 import GuardianDashboard from './pages/GuardianDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import RecordPage from './pages/RecordPage';
 
 function App() {
   return (
@@ -71,6 +73,14 @@ function App() {
           element={
             <PrivateRoute requiredRole="guardian">
               <GuardianDashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/record"
+          element={
+            <PrivateRoute requiredRole="volunteer">
+              <RecordPage />
             </PrivateRoute>
           }
         />
