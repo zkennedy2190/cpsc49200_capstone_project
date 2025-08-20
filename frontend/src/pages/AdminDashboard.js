@@ -1,3 +1,4 @@
+// frontend/src/pages/AdminDashboard.js
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../AuthContext';
 import {
@@ -6,7 +7,6 @@ import {
   Card,
   CardContent,
   Button,
-  Grid,
   Stack,
   Box,
 } from '@mui/material';
@@ -102,10 +102,7 @@ function AdminDashboard() {
                   {new Date(session.endTime).toLocaleString()}
                 </Typography>
                 <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
-                  <Button
-                    variant="contained"
-                    onClick={() => approve(session.id)}
-                  >
+                  <Button variant="contained" onClick={() => approve(session.id)}>
                     Approve
                   </Button>
                   <Button

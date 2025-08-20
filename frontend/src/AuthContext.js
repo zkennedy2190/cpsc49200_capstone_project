@@ -1,5 +1,5 @@
 // frontend/src/AuthContext.js
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext } from 'react';
 
 // Export the context itself for compatibility with existing imports
 export const AuthContext = createContext(null);
