@@ -14,8 +14,11 @@
     "bcryptjs": "^3.0.2",
     "better-sqlite3": "^12.2.0",
     "cors": "^2.8.5",
+    "csv": "^6.4.1",
+    "csv-parser": "^3.2.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "parser": "^0.1.4"
   }
 }
