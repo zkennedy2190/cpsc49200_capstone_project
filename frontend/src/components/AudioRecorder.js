@@ -17,22 +17,34 @@ function AudioRecorder({
   const [uploadStatus, setUploadStatus] = useState('');
 
   const uploadRecording = async (blobUrl) => {
+    // Front-end validation to match backend requirements
+    if (!token) {
+      setUploadStatus('Not authenticated.');
+      return;
+    }
+    if (!effectiveVolunteerId) {
+      setUploadStatus('Missing required data: volunteerId.');
+      return;
+    }
+    if (!parentId || !childId) {
+      setUploadStatus('Missing required data: parentId and/or childId.');
+      return;
+    }
+
     setUploadStatus('Uploading...');
     try {
-      // Turn the blob URL into a Blob we can send
+      // Convert blob URL to Blob
       const response = await fetch(blobUrl);
       const blob = await response.blob();
 
-      // Build multipart/form-data
+      // Build multipart/form-data — field name must be "audio"
       const formData = new FormData();
-      // Append under both common field names to match varied backends
       formData.append('audio', blob, 'recording.webm');
-      formData.append('file', blob, 'recording.webm');
-      formData.append('parentId', parentId);
-      formData.append('childId', childId);
-      formData.append('volunteerId', String(effectiveVolunteerId || ''));
+      formData.append('parentId', String(parentId));
+      formData.append('childId', String(childId));
+      formData.append('volunteerId', String(effectiveVolunteerId));
 
-      // Post to backend; do NOT set Content-Type when sending FormData
+      // POST to backend; do NOT set Content-Type when sending FormData
       const res = await apiFetch('/api/upload', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -49,19 +61,13 @@ function AudioRecorder({
         status = res.status;
         ok = res.ok;
         try {
-          // Use clone so we can fall back to text if JSON parsing fails
           data = await res.clone().json();
         } catch {
-          try {
-            bodyText = await res.text();
-          } catch {
-            bodyText = '';
-          }
+          try { bodyText = await res.text(); } catch { bodyText = ''; }
         }
       } else {
         // apiFetch returned parsed JSON
         data = res;
-        // Treat as success unless the payload explicitly says otherwise
         ok = !(data && data.ok === false);
       }
 
