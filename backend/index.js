@@ -1,3 +1,4 @@
+// backend/index.js
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
@@ -12,6 +13,9 @@ init(); // create tables if they don't exist
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+/* NEW: serve uploaded files at /uploads/<filename> */
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Pull the JWT secret from the environment; use a fallback only in development
 const JWT_SECRET =
@@ -43,11 +47,17 @@ function authenticateToken(req, res, next) {
   });
 }
 
+/* Helper to build a public URL for a stored file path */
+function buildFileUrl(req, filePath) {
+  const filename = path.basename(filePath);
+  const base = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+  return `${base}/uploads/${filename}`;
+}
+
 // --------------------------------------------------------------------------
 // User registration and login
 // --------------------------------------------------------------------------
 
-// Register a new user (POST-only)
 app.post('/api/register', async (req, res) => {
   const { username, password, role, facilityId } = req.body;
   if (!username || !password || !role) {
@@ -68,7 +78,6 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Login route: verifies password and returns a JWT plus role and id
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
@@ -83,7 +92,6 @@ app.post('/api/login', async (req, res) => {
 // Books endpoint
 // --------------------------------------------------------------------------
 
-// Return all books.  Attempts to select synopsis and coverUrl if present.
 app.get('/api/books', (req, res) => {
   try {
     let rows;
@@ -96,9 +104,7 @@ app.get('/api/books', (req, res) => {
     }
     res.json(rows);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: 'Error retrieving books', error: error.message });
+    res.status(500).json({ message: 'Error retrieving books', error: error.message });
   }
 });
 
@@ -119,26 +125,45 @@ app.post('/api/upload', authenticateToken, upload.single('audio'), (req, res) =>
   const result = db.prepare(
     'INSERT INTO recordings (filePath, parentId, childId, volunteerId, timestamp) VALUES (?, ?, ?, ?, ?)'
   ).run(req.file.path, parentId, childId, req.user.id, timestamp);
-  res.json({ id: result.lastInsertRowid, message: 'Recording uploaded' });
+
+  /* NEW: return a public URL so the frontend can play immediately */
+  const url = buildFileUrl(req, req.file.path);
+  res.status(201).json({
+    id: result.lastInsertRowid,
+    message: 'Recording uploaded',
+    url,
+    filename: path.basename(req.file.path),
+    createdAt: timestamp,
+    volunteerId: req.user.id,
+    parentId,
+    childId,
+  });
 });
 
-// Get all recordings (authenticated)
+// Get all recordings (authenticated) — include public URL
 app.get('/api/recordings', authenticateToken, (req, res) => {
   const rows = db.prepare('SELECT * FROM recordings').all();
-  res.json(rows);
+  const list = rows.map((r) => ({
+    ...r,
+    url: buildFileUrl(req, r.filePath),
+  }));
+  res.json(list);
 });
 
-// Get recordings for a specific child (authenticated)
+// Get recordings for a specific child (authenticated) — include public URL
 app.get('/api/recordings/:childId', authenticateToken, (req, res) => {
   const rows = db.prepare('SELECT * FROM recordings WHERE childId = ?').all(req.params.childId);
-  res.json(rows);
+  const list = rows.map((r) => ({
+    ...r,
+    url: buildFileUrl(req, r.filePath),
+  }));
+  res.json(list);
 });
 
 // --------------------------------------------------------------------------
 // Ratings endpoints
 // --------------------------------------------------------------------------
 
-// Submit a rating with optional comment (parents only)
 app.post('/api/ratings', authenticateToken, (req, res) => {
   if (req.user.role !== 'parent') {
     return res.status(403).json({ message: 'Only parents can submit ratings' });
@@ -160,7 +185,6 @@ app.post('/api/ratings', authenticateToken, (req, res) => {
   res.json({ message: 'Rating saved' });
 });
 
-// Get all ratings (authenticated)
 app.get('/api/ratings', authenticateToken, (req, res) => {
   const rows = db.prepare('SELECT * FROM ratings').all();
   res.json(rows);
@@ -170,7 +194,6 @@ app.get('/api/ratings', authenticateToken, (req, res) => {
 // Scheduling endpoints
 // --------------------------------------------------------------------------
 
-// Create a schedule (volunteers only)
 app.post('/api/schedules', authenticateToken, (req, res) => {
   if (req.user.role !== 'volunteer') {
     return res.status(403).json({ message: 'Only volunteers can create schedules' });
@@ -185,7 +208,6 @@ app.post('/api/schedules', authenticateToken, (req, res) => {
   res.json({ id: result.lastInsertRowid, message: 'Schedule created' });
 });
 
-// Approve a schedule (admin only)
 app.put('/api/schedules/:id/approve', authenticateToken, (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Only admins can approve schedules' });
@@ -200,7 +222,6 @@ app.put('/api/schedules/:id/approve', authenticateToken, (req, res) => {
   res.json({ message: 'Schedule approved' });
 });
 
-// Reject a schedule (admin only)
 app.put('/api/schedules/:id/reject', authenticateToken, (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Only admins can reject schedules' });
@@ -215,7 +236,6 @@ app.put('/api/schedules/:id/reject', authenticateToken, (req, res) => {
   res.json({ message: 'Schedule rejected' });
 });
 
-// Get all schedules (admin only)
 app.get('/api/schedules', authenticateToken, (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Only admins can access all schedules' });
@@ -224,7 +244,6 @@ app.get('/api/schedules', authenticateToken, (req, res) => {
   res.json(rows);
 });
 
-// Get schedules for a volunteer (volunteer or admin)
 app.get('/api/schedules/volunteer/:id', authenticateToken, (req, res) => {
   if (req.user.role !== 'volunteer' && req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Unauthorized' });
@@ -233,7 +252,6 @@ app.get('/api/schedules/volunteer/:id', authenticateToken, (req, res) => {
   res.json(rows);
 });
 
-// Get schedules for a parent (parent or admin)
 app.get('/api/schedules/parent/:id', authenticateToken, (req, res) => {
   if (parseInt(req.user.id, 10) !== parseInt(req.params.id, 10) && req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Unauthorized' });
