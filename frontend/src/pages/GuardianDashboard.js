@@ -28,7 +28,8 @@ function GuardianDashboard() {
 
   useEffect(() => {
     // Fetch schedules for this guardian (treated like parent)
-    fetch(`http://localhost:4000/api/schedules/parent/${user.id}`, {
+    // Use a relative path so the React dev server's proxy forwards
+    fetch(`/api/schedules/parent/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -41,8 +42,8 @@ function GuardianDashboard() {
       })
       .catch(() => setSchedules([]));
 
-    // Fetch recordings for this guardian
-    fetch(`http://localhost:4000/api/recordings/parent/${user.id}`, {
+    // Fetch recordings for this guardian using a relative path
+    fetch(`/api/recordings/parent/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -55,8 +56,8 @@ function GuardianDashboard() {
       })
       .catch(() => setRecordings([]));
 
-    // Fetch unique child IDs for this guardian
-    fetch(`http://localhost:4000/api/children/${user.id}`, {
+    // Fetch unique child IDs for this guardian via relative path
+    fetch(`/api/children/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())

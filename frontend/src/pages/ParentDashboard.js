@@ -28,8 +28,9 @@ function ParentDashboard() {
   const [selectedChild, setSelectedChild] = useState('all');
 
   useEffect(() => {
-    // Fetch schedules for this parent
-    fetch(`http://localhost:4000/api/schedules/parent/${user.id}`, {
+    // Fetch schedules for this parent via relative path. The proxy will forward
+    // the request to the backend running on port 4000.
+    fetch(`/api/schedules/parent/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -42,8 +43,8 @@ function ParentDashboard() {
       })
       .catch(() => setSchedules([]));
 
-    // Fetch recordings for this parent
-    fetch(`http://localhost:4000/api/recordings/parent/${user.id}`, {
+    // Fetch recordings for this parent via relative path
+    fetch(`/api/recordings/parent/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -56,8 +57,8 @@ function ParentDashboard() {
       })
       .catch(() => setRecordings([]));
 
-    // Fetch unique child IDs
-    fetch(`http://localhost:4000/api/children/${user.id}`, {
+    // Fetch unique child IDs via relative path
+    fetch(`/api/children/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())

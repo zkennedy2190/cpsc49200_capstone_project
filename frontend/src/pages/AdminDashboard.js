@@ -21,8 +21,8 @@ function AdminDashboard() {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
-    // Fetch all schedules and filter pending
-    fetch('http://localhost:4000/api/schedules', {
+    // Fetch all schedules and filter pending via relative path
+    fetch('/api/schedules', {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -35,8 +35,8 @@ function AdminDashboard() {
       })
       .catch(() => setPending([]));
 
-    // Fetch all users
-    fetch('http://localhost:4000/api/users', {
+    // Fetch all users via relative path
+    fetch('/api/users', {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -51,7 +51,7 @@ function AdminDashboard() {
   }, [user]);
 
   const approve = async (id) => {
-    await fetch(`http://localhost:4000/api/schedules/${id}/approve`, {
+    await fetch(`/api/schedules/${id}/approve`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${user.token}` },
     });
@@ -59,7 +59,7 @@ function AdminDashboard() {
   };
 
   const reject = async (id) => {
-    await fetch(`http://localhost:4000/api/schedules/${id}/reject`, {
+    await fetch(`/api/schedules/${id}/reject`, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${user.token}` },
     });
@@ -68,7 +68,7 @@ function AdminDashboard() {
 
   const deleteUser = async (id) => {
     if (!window.confirm('Are you sure you want to delete this user?')) return;
-    await fetch(`http://localhost:4000/api/users/${id}`, {
+    await fetch(`/api/users/${id}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${user.token}` },
     });

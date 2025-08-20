@@ -22,7 +22,8 @@ function VolunteerDashboard() {
 
   useEffect(() => {
     // Fetch schedules for this volunteer
-    fetch(`http://localhost:4000/api/schedules/volunteer/${user.id}`, {
+    // Use a relative path so React's proxy forwards to the backend.
+    fetch(`/api/schedules/volunteer/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -39,7 +40,8 @@ function VolunteerDashboard() {
       .catch(() => setSchedules([]));
 
     // Fetch all ratings to compute volunteer's average rating
-    fetch('http://localhost:4000/api/ratings', {
+    // Use a relative path for ratings as well.
+    fetch('/api/ratings', {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())

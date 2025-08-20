@@ -1,5 +1,5 @@
 // frontend/src/AuthContext.js
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 // Export the context itself for compatibility with existing imports
 export const AuthContext = createContext(null);
@@ -13,21 +13,27 @@ export function useAuth() {
 
 /**
  * AuthProvider supplies login/logout functions and manages the current user.
+ * It persists the user in localStorage so that a page refresh keeps you logged in.
  */
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  // Initialise state from localStorage if present
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('user');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   // Save user after successful login
   const login = (userData) => {
     setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
   };
 
   /**
    * Clears the user and ensures the page refreshes to the login route.
-   * If the user is already on the login page, call reload to force a refresh.
    */
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('user');
 
     // If already on the login page, reload to show the refresh.
     if (window.location.pathname === '/login') {
