@@ -1,5 +1,4 @@
-# Build and deploy the Node.js backend to Azure Web App cpsc49200capstonebackend
-name: Build and deploy Node.js app to Azure Web App - cpsc49200capstonebackend
+name: Deploy backend to Azure Web App
 
 on:
   push:
@@ -9,10 +8,9 @@ on:
 
 env:
   AZURE_WEBAPP_PACKAGE_PATH: backend
-  NODE_VERSION: '20.x'
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -21,26 +19,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}/package-lock.json
-
-      - name: Install dependencies and build backend
-        run: |
-          cd ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-          npm install
-          npm run build --if-present
-          # tests omitted to avoid failure on default script
-
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id:     ${{ secrets.AZUREAPPSERVICE_CLIENTID_38C3DA46F21941A08CD3DC3E7E33223F }}
-          tenant-id:     ${{ secrets.AZUREAPPSERVICE_TENANTID_9C3A9C8F85CB43DF89DF6DB36975789F }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_4215DC3EA0D649A9897CB06A3EC04320 }}
+          client-id:     ${{ secrets.AZUREAPPSERVICE_CLIENTID_… }}
+          tenant-id:     ${{ secrets.AZUREAPPSERVICE_TENANTID_… }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_… }}
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
