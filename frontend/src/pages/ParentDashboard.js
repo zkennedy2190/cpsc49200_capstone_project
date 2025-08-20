@@ -80,13 +80,10 @@ function ParentDashboard() {
       });
   }, [user]);
 
+  // For parents, schedules are tied to the parent and not to a specific child,
+  // so we simply show all approved schedules regardless of the selected child.
   const approvedSchedules = schedules.filter((s) => s.status === 'approved');
-  const filteredSchedules =
-    selectedChild === 'all'
-      ? approvedSchedules
-      : approvedSchedules.filter(
-          (s) => Number(s.childId) === Number(selectedChild)
-        );
+  const filteredSchedules = approvedSchedules;
   const filteredRecordings =
     selectedChild === 'all'
       ? recordings

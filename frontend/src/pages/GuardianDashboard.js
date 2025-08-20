@@ -79,13 +79,9 @@ function GuardianDashboard() {
       });
   }, [user]);
 
+  // For guardians, schedules are linked to the parent/guardian rather than a specific child.
   const approvedSchedules = schedules.filter((s) => s.status === 'approved');
-  const filteredSchedules =
-    selectedChild === 'all'
-      ? approvedSchedules
-      : approvedSchedules.filter(
-          (s) => Number(s.childId) === Number(selectedChild)
-        );
+  const filteredSchedules = approvedSchedules;
   const filteredRecordings =
     selectedChild === 'all'
       ? recordings
