@@ -1,3 +1,4 @@
+// frontend/src/pages/SchedulePage.js
 import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../AuthContext';
 import {
@@ -11,6 +12,7 @@ import {
   Stack,
   Grid,
 } from '@mui/material';
+import { apiFetch } from '../api'; // <— added
 
 /**
  * Schedule creation and display page for volunteers.
@@ -25,7 +27,7 @@ function SchedulePage() {
   const [averages, setAverages] = useState({});
 
   useEffect(() => {
-    fetch(`http://localhost:4000/api/schedules/volunteer/${user.id}`, {
+    apiFetch(`/api/schedules/volunteer/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -33,7 +35,7 @@ function SchedulePage() {
   }, [user]);
 
   useEffect(() => {
-    fetch('http://localhost:4000/api/ratings', {
+    apiFetch('/api/ratings', {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
@@ -55,7 +57,7 @@ function SchedulePage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    fetch('http://localhost:4000/api/schedules', {
+    apiFetch('/api/schedules', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -137,7 +139,7 @@ function SchedulePage() {
                   Status: <strong>{session.status}</strong>
                 </Typography>
                 <Typography variant="body2">
-                  Avg Rating:{' '}
+                  Avg&nbsp;Rating:{' '}
                   {averages[user.id] ? averages[user.id].toFixed(1) : 'N/A'}
                 </Typography>
               </CardContent>
