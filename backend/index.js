@@ -24,7 +24,6 @@ if (!JWT_SECRET) {
   );
 }
 
-
 // Ensure uploads folder exists for audio files
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
@@ -92,7 +91,30 @@ app.post('/api/upload', authenticateToken, upload.single('audio'), (req, res) =>
   res.json({ id: result.lastInsertRowid, message: 'Recording uploaded' });
 });
 
-// …(all other routes remain unchanged)…
+// -----------------------------------------------------------------
+// New route: return the list of books from the database.
+// Tries to include synopsis and coverUrl if those columns exist.
+app.get('/api/books', (req, res) => {
+  try {
+    let rows;
+    try {
+      rows = db
+        .prepare('SELECT id, title, author, synopsis, coverUrl FROM books ORDER BY title')
+        .all();
+    } catch (err) {
+      // If the synopsis/coverUrl columns do not exist, fall back to basic fields
+      rows = db.prepare('SELECT id, title, author FROM books ORDER BY title').all();
+    }
+    res.json(rows);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: 'Error retrieving books', error: error.message });
+  }
+});
+// -----------------------------------------------------------------
+
+// …(all other routes remain unchanged)… 
 
 // Start the server on the port Azure provides (fallback to 4000 locally)
 const PORT = process.env.PORT || 4000;
