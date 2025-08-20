@@ -11,43 +11,60 @@ import {
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 
+/**
+ * Enhanced dashboard for volunteers.
+ * Shows upcoming approved sessions, average rating, and actions to propose a session or record a story.
+ */
 function VolunteerDashboard() {
   const { user } = useContext(AuthContext);
   const [schedules, setSchedules] = useState([]);
   const [avgRating, setAvgRating] = useState(null);
 
   useEffect(() => {
-    // Fetch this volunteer’s schedules
+    // Fetch schedules for this volunteer
     fetch(`http://localhost:4000/api/schedules/volunteer/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
-      .then((data) => setSchedules(Array.isArray(data) ? data : []));
-    // Fetch all ratings to compute volunteer’s average
+      .then((data) => {
+        if (Array.isArray(data)) {
+          // Sort by start time ascending
+          setSchedules(
+            data.sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
+          );
+        } else {
+          setSchedules([]);
+        }
+      })
+      .catch(() => setSchedules([]));
+
+    // Fetch all ratings to compute volunteer's average rating
     fetch('http://localhost:4000/api/ratings', {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
       .then((data) => {
-        if (!Array.isArray(data)) {
+        if (Array.isArray(data)) {
+          const volunteerRatings = data.filter(
+            (r) => Number(r.volunteerId) === Number(user.id)
+          );
+          if (volunteerRatings.length > 0) {
+            const total = volunteerRatings.reduce(
+              (acc, r) => acc + Number(r.rating),
+              0
+            );
+            setAvgRating((total / volunteerRatings.length).toFixed(1));
+          } else {
+            setAvgRating(null);
+          }
+        } else {
           setAvgRating(null);
-          return;
         }
-        const volunteerRatings = data.filter(
-          (r) => Number(r.volunteerId) === user.id
-        );
-        if (volunteerRatings.length === 0) {
-          setAvgRating(null);
-          return;
-        }
-        const total = volunteerRatings.reduce(
-          (acc, r) => acc + Number(r.rating),
-          0
-        );
-        setAvgRating((total / volunteerRatings.length).toFixed(1));
-      });
+      })
+      .catch(() => setAvgRating(null));
   }, [user]);
 
+  // Filter approved sessions
   const approvedSessions = schedules.filter((s) => s.status === 'approved');
 
   return (
@@ -56,12 +73,14 @@ function VolunteerDashboard() {
         Volunteer Dashboard
       </Typography>
       <Grid container spacing={3}>
-      {/* Cards summarising the counts */}
+        {/* Summary cards */}
         <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6">Upcoming Sessions</Typography>
-              <Typography variant="h3">{approvedSessions.length}</Typography>
+              <Typography variant="h3">
+                {approvedSessions.length}
+              </Typography>
               <Button
                 component={Link}
                 to="/schedule"
@@ -87,7 +106,7 @@ function VolunteerDashboard() {
               <Typography variant="h6">Record a New Story</Typography>
               <Button
                 component={Link}
-                to="/recorder"
+                to="/recordings"
                 variant="contained"
                 sx={{ mt: 2 }}
               >
@@ -97,8 +116,7 @@ function VolunteerDashboard() {
           </Card>
         </Grid>
       </Grid>
-
-      {/* Detailed upcoming sessions list */}
+      {/* List of upcoming approved sessions */}
       <Box sx={{ mt: 4 }}>
         <Typography variant="h5" gutterBottom>
           Upcoming Approved Sessions

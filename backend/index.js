@@ -152,6 +152,21 @@ app.put('/api/schedules/:id/approve', authenticateToken, (req, res) => {
   res.json({ message: 'Schedule approved' });
 });
 
+// Reject a schedule (admin only)
+app.put('/api/schedules/:id/reject', authenticateToken, (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Only admins can reject schedules' });
+  }
+  const result = db.prepare('UPDATE schedules SET status = ? WHERE id = ?').run(
+    'rejected',
+    req.params.id
+  );
+  if (result.changes === 0) {
+    return res.status(404).json({ message: 'Schedule not found' });
+  }
+  res.json({ message: 'Schedule rejected' });
+});
+
 // Get schedules for a volunteer (volunteer or admin)
 app.get('/api/schedules/volunteer/:id', authenticateToken, (req, res) => {
   if (req.user.role !== 'volunteer' && req.user.role !== 'admin') {

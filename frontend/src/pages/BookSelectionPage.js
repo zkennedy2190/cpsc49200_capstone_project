@@ -5,17 +5,22 @@ import {
   List,
   ListItem,
   ListItemText,
-  ListItemIcon,
   Tooltip,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
-  Box,
-  Avatar,
 } from '@mui/material';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
 
+/**
+ * BookSelectionPage (synopsis only)
+ *
+ * This component fetches a list of children’s books from the back‑end and displays
+ * them in a list. Each item shows the book title and author. On hover, a
+ * tooltip shows a truncated synopsis; clicking an item opens a dialog with
+ * the full synopsis. Cover images are deliberately excluded to simplify the
+ * page and because no `coverUrl` field is present in the data.
+ */
 function BookSelectionPage() {
   const [books, setBooks] = useState([]);
   const [selectedBook, setSelectedBook] = useState(null);
@@ -67,18 +72,6 @@ function BookSelectionPage() {
             placement="right"
           >
             <ListItem button onClick={() => handleOpen(book)}>
-              <ListItemIcon>
-                {book.coverUrl ? (
-                  <Avatar
-                    variant="square"
-                    src={book.coverUrl}
-                    alt={book.title}
-                    sx={{ width: 48, height: 48, mr: 1 }}
-                  />
-                ) : (
-                  <MenuBookIcon />
-                )}
-              </ListItemIcon>
               <ListItemText primary={book.title} secondary={book.author} />
             </ListItem>
           </Tooltip>
@@ -88,15 +81,6 @@ function BookSelectionPage() {
         <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
           <DialogTitle>{selectedBook.title}</DialogTitle>
           <DialogContent dividers>
-            {selectedBook.coverUrl && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                <img
-                  src={selectedBook.coverUrl}
-                  alt={selectedBook.title}
-                  style={{ maxHeight: 250, objectFit: 'contain' }}
-                />
-              </Box>
-            )}
             <Typography variant="subtitle1" gutterBottom>
               {selectedBook.author}
             </Typography>

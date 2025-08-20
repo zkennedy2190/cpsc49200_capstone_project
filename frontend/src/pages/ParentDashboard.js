@@ -7,17 +7,18 @@ import {
   Card,
   CardContent,
   Button,
-  MenuItem,
-  Select,
   FormControl,
   InputLabel,
+  Select,
+  MenuItem,
   Box,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 
 /**
- * Parent dashboard summarising upcoming sessions and available recordings.
- * Includes a child selector when multiple children are present.
+ * Enhanced parent dashboard.
+ * Displays counts for upcoming sessions and recordings, supports child selection,
+ * and lists upcoming approved sessions. Uses parent-specific API endpoints.
  */
 function ParentDashboard() {
   const { user } = useContext(AuthContext);
@@ -32,14 +33,28 @@ function ParentDashboard() {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
-      .then((data) => setSchedules(Array.isArray(data) ? data : []));
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setSchedules(data);
+        } else {
+          setSchedules([]);
+        }
+      })
+      .catch(() => setSchedules([]));
 
     // Fetch recordings for this parent
     fetch(`http://localhost:4000/api/recordings/parent/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
-      .then((data) => setRecordings(Array.isArray(data) ? data : []));
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setRecordings(data);
+        } else {
+          setRecordings([]);
+        }
+      })
+      .catch(() => setRecordings([]));
 
     // Fetch unique child IDs
     fetch(`http://localhost:4000/api/children/${user.id}`, {
@@ -49,23 +64,38 @@ function ParentDashboard() {
       .then((data) => {
         if (Array.isArray(data)) {
           setChildrenIds(data);
-          if (data.length > 0) {
+          if (data.length === 1) {
             setSelectedChild(data[0]);
+          } else {
+            setSelectedChild('all');
           }
+        } else {
+          setChildrenIds([]);
+          setSelectedChild('all');
         }
+      })
+      .catch(() => {
+        setChildrenIds([]);
+        setSelectedChild('all');
       });
   }, [user]);
 
-  // Filter recordings by child (if a specific child is selected)
+  const approvedSchedules = schedules.filter((s) => s.status === 'approved');
+  const filteredSchedules =
+    selectedChild === 'all'
+      ? approvedSchedules
+      : approvedSchedules.filter(
+          (s) => Number(s.childId) === Number(selectedChild)
+        );
   const filteredRecordings =
     selectedChild === 'all'
       ? recordings
-      : recordings.filter((r) => r.childId === Number(selectedChild));
+      : recordings.filter(
+          (r) => Number(r.childId) === Number(selectedChild)
+        );
 
-  const approvedSchedules = schedules.filter((s) => s.status === 'approved');
-
-  const handleChildChange = (e) => {
-    setSelectedChild(e.target.value);
+  const handleChildChange = (event) => {
+    setSelectedChild(event.target.value);
   };
 
   return (
@@ -73,8 +103,6 @@ function ParentDashboard() {
       <Typography variant="h4" gutterBottom>
         Parent Dashboard
       </Typography>
-
-      {/* Child selector */}
       {childrenIds.length > 1 && (
         <FormControl sx={{ mb: 3, minWidth: 200 }}>
           <InputLabel id="child-select-label">Select Child</InputLabel>
@@ -93,14 +121,12 @@ function ParentDashboard() {
           </Select>
         </FormControl>
       )}
-
       <Grid container spacing={3}>
-        {/* Sessions summary */}
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6">Upcoming Sessions</Typography>
-              <Typography variant="h3">{approvedSchedules.length}</Typography>
+              <Typography variant="h3">{filteredSchedules.length}</Typography>
               <Button
                 component={Link}
                 to="/schedule"
@@ -112,7 +138,6 @@ function ParentDashboard() {
             </CardContent>
           </Card>
         </Grid>
-        {/* Recordings summary */}
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
@@ -128,25 +153,23 @@ function ParentDashboard() {
                 variant="contained"
                 sx={{ mt: 2 }}
               >
-                Listen &amp; Rate
+                Listen & Rate
               </Button>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
-
-      {/* Upcoming sessions list */}
       <Box sx={{ mt: 4 }}>
         <Typography variant="h5" gutterBottom>
           Upcoming Approved Sessions
         </Typography>
-        {approvedSchedules.length === 0 ? (
+        {filteredSchedules.length === 0 ? (
           <Typography>No approved sessions scheduled.</Typography>
         ) : (
-          approvedSchedules.map((session) => (
+          filteredSchedules.map((session) => (
             <Card key={session.id} sx={{ mb: 2 }}>
               <CardContent>
-                <Typography variant="body1">
+                <Typography variant="subtitle1">
                   Volunteer #{session.volunteerId}
                 </Typography>
                 <Typography variant="body2">

@@ -7,17 +7,17 @@ import {
   Card,
   CardContent,
   Button,
-  MenuItem,
-  Select,
   FormControl,
   InputLabel,
+  Select,
+  MenuItem,
   Box,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 
 /**
- * Guardian dashboard summarising sessions and recordings per child.
- * Similar to the ParentDashboard but with a different heading.
+ * Enhanced guardian dashboard.
+ * Mirrors the parent dashboard but labelled differently.
  */
 function GuardianDashboard() {
   const { user } = useContext(AuthContext);
@@ -27,19 +27,35 @@ function GuardianDashboard() {
   const [selectedChild, setSelectedChild] = useState('all');
 
   useEffect(() => {
-    // Guardians call the same parent endpoints
+    // Fetch schedules for this guardian (treated like parent)
     fetch(`http://localhost:4000/api/schedules/parent/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
-      .then((data) => setSchedules(Array.isArray(data) ? data : []));
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setSchedules(data);
+        } else {
+          setSchedules([]);
+        }
+      })
+      .catch(() => setSchedules([]));
 
+    // Fetch recordings for this guardian
     fetch(`http://localhost:4000/api/recordings/parent/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
       .then((res) => res.json())
-      .then((data) => setRecordings(Array.isArray(data) ? data : []));
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setRecordings(data);
+        } else {
+          setRecordings([]);
+        }
+      })
+      .catch(() => setRecordings([]));
 
+    // Fetch unique child IDs for this guardian
     fetch(`http://localhost:4000/api/children/${user.id}`, {
       headers: { Authorization: `Bearer ${user.token}` },
     })
@@ -47,28 +63,43 @@ function GuardianDashboard() {
       .then((data) => {
         if (Array.isArray(data)) {
           setChildrenIds(data);
-          if (data.length > 0) {
+          if (data.length === 1) {
             setSelectedChild(data[0]);
+          } else {
+            setSelectedChild('all');
           }
+        } else {
+          setChildrenIds([]);
+          setSelectedChild('all');
         }
+      })
+      .catch(() => {
+        setChildrenIds([]);
+        setSelectedChild('all');
       });
   }, [user]);
 
+  const approvedSchedules = schedules.filter((s) => s.status === 'approved');
+  const filteredSchedules =
+    selectedChild === 'all'
+      ? approvedSchedules
+      : approvedSchedules.filter(
+          (s) => Number(s.childId) === Number(selectedChild)
+        );
   const filteredRecordings =
     selectedChild === 'all'
       ? recordings
-      : recordings.filter((r) => r.childId === Number(selectedChild));
+      : recordings.filter(
+          (r) => Number(r.childId) === Number(selectedChild)
+        );
 
-  const approvedSchedules = schedules.filter((s) => s.status === 'approved');
-
-  const handleChildChange = (e) => setSelectedChild(e.target.value);
+  const handleChildChange = (event) => setSelectedChild(event.target.value);
 
   return (
     <Container sx={{ py: 4 }}>
       <Typography variant="h4" gutterBottom>
         Guardian Dashboard
       </Typography>
-
       {childrenIds.length > 1 && (
         <FormControl sx={{ mb: 3, minWidth: 200 }}>
           <InputLabel id="guardian-child-select-label">Select Child</InputLabel>
@@ -87,13 +118,12 @@ function GuardianDashboard() {
           </Select>
         </FormControl>
       )}
-
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
               <Typography variant="h6">Upcoming Sessions</Typography>
-              <Typography variant="h3">{approvedSchedules.length}</Typography>
+              <Typography variant="h3">{filteredSchedules.length}</Typography>
               <Button
                 component={Link}
                 to="/schedule"
@@ -120,24 +150,23 @@ function GuardianDashboard() {
                 variant="contained"
                 sx={{ mt: 2 }}
               >
-                Listen &amp; Rate
+                Listen & Rate
               </Button>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
-
       <Box sx={{ mt: 4 }}>
         <Typography variant="h5" gutterBottom>
           Upcoming Approved Sessions
         </Typography>
-        {approvedSchedules.length === 0 ? (
+        {filteredSchedules.length === 0 ? (
           <Typography>No approved sessions scheduled.</Typography>
         ) : (
-          approvedSchedules.map((session) => (
+          filteredSchedules.map((session) => (
             <Card key={session.id} sx={{ mb: 2 }}>
               <CardContent>
-                <Typography variant="body1">
+                <Typography variant="subtitle1">
                   Volunteer #{session.volunteerId}
                 </Typography>
                 <Typography variant="body2">
