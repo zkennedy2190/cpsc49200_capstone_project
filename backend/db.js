@@ -1,12 +1,14 @@
-// backend/db.js
+// Updated backend/db.js
 const Database = require('better-sqlite3');
+const path = require('path');
 
-// Open or create database file
-const db = new Database('database.db');
+// Always open the DB relative to this file’s directory
+const dbPath = path.join(__dirname, 'database.db');
+const db     = new Database(dbPath);
 
-// Initialize tables if they don't exist
+// Create tables if they don't exist
 const init = () => {
-    db.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
