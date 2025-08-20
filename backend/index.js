@@ -14,12 +14,16 @@ app.use(cors());
 app.use(express.json());
 
 // Pull the JWT secret from the environment.  If it’s not set, throw an error.
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  (process.env.NODE_ENV !== 'production' ? 'dev_secret' : undefined);
+
 if (!JWT_SECRET) {
   throw new Error(
-    'JWT_SECRET is not defined. Set this environment variable in your App Service or local environment.'
+    'JWT_SECRET is not defined. Set this environment variable in production.'
   );
 }
+
 
 // Ensure uploads folder exists for audio files
 const uploadsDir = path.join(__dirname, 'uploads');
