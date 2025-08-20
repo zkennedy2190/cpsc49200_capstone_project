@@ -1,22 +1,23 @@
-// populate-users.js
-// Registers a set of users against your Azure backend.
-// Requires Node 18+ for native fetch support.
+// populate-test-users.js
+// Node 18+ is required because it uses the Fetch API.
 
-// Azure API endpoint for registration – update if your backend URL changes
-const baseApiUrl =
-  'https://cpsc49200capstonebackend-chgrc2e5aae7cvdp.centralus-01.azurewebsites.net/api/register';
+// Replace with the base URL of your deployed API.  The full path should end with /api/register.
+const baseApiUrl = 'https://<your-app-name>.azurewebsites.net/api/register';
 
-// User definitions
+// Define the eight users and roles you want to create; all use password "test".
 const usersToCreate = [
-  { username: 'testadmin1', password: 'secret123', role: 'admin' },
-  { username: 'testadmin2', password: 'secret123', role: 'admin' },
-  { username: 'testparent1', password: 'secret123', role: 'parent' },
-  { username: 'testparent2', password: 'secret123', role: 'parent' },
-  { username: 'testvolunteer1', password: 'secret123', role: 'volunteer' },
-  { username: 'testguardian1', password: 'secret123', role: 'guardian' },
+  { username: 'testadmin1', password: 'test', role: 'admin' },
+  { username: 'testadmin2', password: 'test', role: 'admin' },
+  { username: 'testparent1', password: 'test', role: 'parent' },
+  { username: 'testparent2', password: 'test', role: 'parent' },
+  { username: 'testguardian1', password: 'test', role: 'guardian' },
+  { username: 'testguardian2', password: 'test', role: 'guardian' },
+  { username: 'testvolunteer1', password: 'test', role: 'volunteer' },
+  { username: 'testvolunteer2', password: 'test', role: 'volunteer' },
 ];
 
-// Helper to register a single user
+// Register a single user and log success or failure.
+// Handles cases where the API returns text instead of JSON.
 async function registerUser(user) {
   const response = await fetch(baseApiUrl, {
     method: 'POST',
@@ -24,33 +25,23 @@ async function registerUser(user) {
     body: JSON.stringify(user),
   });
 
-  // Check if the response is JSON; otherwise fall back to plain text
   const contentType = response.headers.get('content-type');
-  let result;
-  if (contentType && contentType.includes('application/json')) {
-    result = await response.json();
-  } else {
-    result = await response.text();
-  }
+  const result = contentType && contentType.includes('application/json')
+    ? await response.json()
+    : await response.text();
 
   if (response.ok) {
-    // If JSON, try to print the message; otherwise print the raw text
-    const msg =
-      typeof result === 'object'
-        ? result.message || JSON.stringify(result)
-        : result;
-    console.log(`Registered ${user.username}: ${msg}`);
+    const message =
+      typeof result === 'object' ? result.message || 'OK' : result;
+    console.log(`Registered ${user.username}: ${message}`);
   } else {
-    // Log the error returned by the server or the raw text
-    const msg =
-      typeof result === 'object'
-        ? result.message || JSON.stringify(result)
-        : result;
-    console.error(`Failed to register ${user.username}: ${msg}`);
+    const message =
+      typeof result === 'object' ? result.message : result;
+    console.error(`Failed to register ${user.username}: ${message}`);
   }
 }
 
-// Main routine to register all users
+// Main routine that iterates over all test users.
 (async () => {
   for (const user of usersToCreate) {
     try {
