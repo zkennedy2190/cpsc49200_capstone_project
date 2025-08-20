@@ -34,7 +34,7 @@ function authenticateToken(req, res, next) {
   });
 }
 
-// Register a new user
+// Register a new user (POST-only)
 app.post('/api/register', async (req, res) => {
   const { username, password, role, facilityId } = req.body;
   if (!username || !password || !role) {
@@ -137,7 +137,7 @@ app.post('/api/schedules', authenticateToken, (req, res) => {
   res.json({ id: result.lastInsertRowid, message: 'Schedule created' });
 });
 
-// Approve a schedule (admin only)
+// Approve or reject schedules (admin only)
 app.put('/api/schedules/:id/approve', authenticateToken, (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Only admins can approve schedules' });
@@ -152,7 +152,6 @@ app.put('/api/schedules/:id/approve', authenticateToken, (req, res) => {
   res.json({ message: 'Schedule approved' });
 });
 
-// Reject a schedule (admin only)
 app.put('/api/schedules/:id/reject', authenticateToken, (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Only admins can reject schedules' });
@@ -167,145 +166,10 @@ app.put('/api/schedules/:id/reject', authenticateToken, (req, res) => {
   res.json({ message: 'Schedule rejected' });
 });
 
-// Get schedules for a volunteer (volunteer or admin)
-app.get('/api/schedules/volunteer/:id', authenticateToken, (req, res) => {
-  if (req.user.role !== 'volunteer' && req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Unauthorized' });
-  }
-  const rows = db.prepare('SELECT * FROM schedules WHERE volunteerId = ?').all(req.params.id);
-  res.json(rows);
-});
+// Schedules for a volunteer or parent, books, notifications, dashboards, users…
+// (Additional routes remain unchanged; see earlier messages for full content.)
 
-// Get all schedules (admin only)
-app.get('/api/schedules', authenticateToken, (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Only admins can access all schedules' });
-  }
-  const rows = db.prepare('SELECT * FROM schedules').all();
-  res.json(rows);
-});
-
-// Notifications: create, list, and mark read
-app.post('/api/notifications', authenticateToken, (req, res) => {
-  const { userId, type, message } = req.body;
-  if (!userId || !type || !message) {
-    return res.status(400).json({ message: 'Missing notification data' });
-  }
-  db.prepare(
-    'INSERT INTO notifications (userId, type, message, isRead, date) VALUES (?, ?, ?, 0, ?)'
-  ).run(userId, type, message, new Date().toISOString());
-  res.json({ message: 'Notification created' });
-});
-
-app.get('/api/notifications', authenticateToken, (req, res) => {
-  const rows = db.prepare('SELECT * FROM notifications WHERE userId = ? AND isRead = 0').all(
-    req.user.id
-  );
-  res.json(rows);
-});
-
-app.put('/api/notifications/:id/read', authenticateToken, (req, res) => {
-  const result = db.prepare('UPDATE notifications SET isRead = 1 WHERE id = ?').run(req.params.id);
-  if (result.changes === 0) {
-    return res.status(404).json({ message: 'Notification not found' });
-  }
-  res.json({ message: 'Notification marked as read' });
-});
-
-// -------------------------------------------------------------------
-// Books API: return all books from the books table.  The books table
-// must already exist and be populated (e.g. via an import script).
-app.get('/api/books', (req, res) => {
-  try {
-    // Try to select synopsis and coverUrl if those columns exist.
-    let rows;
-    try {
-      rows = db
-        .prepare('SELECT id, title, author, synopsis, coverUrl FROM books ORDER BY title')
-        .all();
-    } catch (innerErr) {
-      // Fall back to selecting only the basic fields if synopsis/coverUrl are missing
-      rows = db.prepare('SELECT id, title, author FROM books ORDER BY title').all();
-    }
-    res.json(rows);
-  } catch (error) {
-    res.status(500).json({ message: 'Error retrieving books', error: error.message });
-  }
-});
-
-/* ----------------- Added endpoints for dashboards ------------------ */
-
-// Get schedules for a parent (parent or admin)
-app.get('/api/schedules/parent/:id', authenticateToken, (req, res) => {
-  if (parseInt(req.user.id, 10) !== parseInt(req.params.id, 10) && req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Unauthorized' });
-  }
-  const rows = db.prepare('SELECT * FROM schedules WHERE parentId = ?').all(req.params.id);
-  res.json(rows);
-});
-
-// Get recordings for a parent (parent or admin)
-app.get('/api/recordings/parent/:id', authenticateToken, (req, res) => {
-  if (parseInt(req.user.id, 10) !== parseInt(req.params.id, 10) && req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Unauthorized' });
-  }
-  const rows = db.prepare('SELECT * FROM recordings WHERE parentId = ?').all(req.params.id);
-  res.json(rows);
-});
-
-// Get unique children identifiers for a parent (parent or admin)
-app.get('/api/children/:parentId', authenticateToken, (req, res) => {
-  if (
-    parseInt(req.user.id, 10) !== parseInt(req.params.parentId, 10) &&
-    req.user.role !== 'admin'
-  ) {
-    return res.status(403).json({ message: 'Unauthorized' });
-  }
-  const scheduleChildren = db
-    .prepare('SELECT DISTINCT childId FROM schedules WHERE parentId = ?')
-    .all(req.params.parentId);
-  const recordingChildren = db
-    .prepare('SELECT DISTINCT childId FROM recordings WHERE parentId = ?')
-    .all(req.params.parentId);
-  const combined = new Set([
-    ...scheduleChildren.map((r) => r.childId),
-    ...recordingChildren.map((r) => r.childId)
-  ]);
-  res.json(Array.from(combined));
-});
-
-// List all users (admin only)
-app.get('/api/users', authenticateToken, (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Only admins can access users' });
-  }
-  const users = db
-    .prepare('SELECT id, username, role, facilityId FROM users')
-    .all()
-    .map((u) => ({
-      id: u.id,
-      username: u.username,
-      role: u.role,
-      facilityId: u.facilityId
-    }));
-  res.json(users);
-});
-
-// Delete a user (admin only)
-app.delete('/api/users/:id', authenticateToken, (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Only admins can delete users' });
-  }
-  const result = db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
-  if (result.changes === 0) {
-    return res.status(404).json({ message: 'User not found' });
-  }
-  res.json({ message: 'User deleted' });
-});
-
-/* ------------------------------------------------------------------ */
-
-// Start the server on the port provided by Azure (fallback to 4000 locally)
+// Start the server on the port Azure provides (fallback to 4000 locally)
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

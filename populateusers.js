@@ -1,4 +1,4 @@
-// populateusers.js
+// populate-users.js
 // Node 18+ required for native fetch support.
 
 const baseApiUrl =
