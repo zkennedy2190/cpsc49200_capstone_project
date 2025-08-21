@@ -13,47 +13,61 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import HomeIcon from '@mui/icons-material/Home';
 import Box from '@mui/material/Box';
 import { AuthContext } from '../AuthContext';
+import { apiFetch } from '../api';
 
-/**
- * Header that displays navigation links, notifications and logout.
- * The title next to the home button has been removed as requested.
- */
 function Header() {
   const { user, logout } = useContext(AuthContext);
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState([]);    // always an array
   const [anchorEl, setAnchorEl] = useState(null);
 
-  // Fetch notifications on user change
-  useEffect(() => {
-    if (!user) {
+  const loadNotifications = async () => {
+    if (!user?.token) {
       setNotifications([]);
       return;
     }
-    fetch('http://localhost:4000/api/notifications', {
-      headers: { Authorization: `Bearer ${user.token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => setNotifications(data))
-      .catch(() => setNotifications([]));
-  }, [user]);
+    try {
+      const res = await apiFetch('/api/notifications', {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      const data = typeof res?.json === 'function' ? await res.json() : res;
+      setNotifications(Array.isArray(data) ? data : []);      // guard against 401/403/HTML
+    } catch {
+      setNotifications([]);                                   // network or 4xx/5xx → empty list
+    }
+  };
 
-  const handleBellClick = (event) => setAnchorEl(event.currentTarget);
+  useEffect(() => {
+    loadNotifications();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, user?.token]);
+
+  const handleBellClick = (e) => setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
   const handleMarkRead = async (id) => {
-    await fetch(`http://localhost:4000/api/notifications/${id}/read`, {
-      method: 'PUT',
-      headers: { Authorization: `Bearer ${user.token}` },
-    });
-    setNotifications(notifications.filter((n) => n.id !== id));
+    if (!user?.token) return;
+    try {
+      await apiFetch(`/api/notifications/${id}/read`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      setNotifications((prev) =>
+        Array.isArray(prev) ? prev.filter((n) => n.id !== id) : []
+      );
+    } catch {
+      // ignore; keep UI responsive
+    }
   };
 
-  // Create a matte black navigation button using the theme's contained style
   const navLink = (to, label) => (
     <Button component={Link} to={to} variant="contained" sx={{ ml: 1 }}>
       {label}
     </Button>
   );
+
+  const unreadCount = Array.isArray(notifications)
+    ? notifications.filter((n) => !n.read && !n.isRead).length
+    : 0;
 
   return (
     <>
@@ -68,7 +82,6 @@ function Header() {
           <IconButton color="inherit" component={Link} to="/">
             <HomeIcon />
           </IconButton>
-          {/* Spacer to push navigation items to the right */}
           <Box sx={{ flexGrow: 1 }} />
           {!user && (
             <>
@@ -78,7 +91,6 @@ function Header() {
           )}
           {user?.role === 'volunteer' && navLink('/volunteer', 'Volunteer Dashboard')}
           {user?.role === 'volunteer' && navLink('/schedule', 'Schedule')}
-          {/* ADDED: link to the actual recording tool */}
           {user?.role === 'volunteer' && navLink('/record', 'Record')}
           {user?.role === 'parent' && navLink('/parent', 'Parent Dashboard')}
           {user?.role === 'guardian' && navLink('/guardian', 'Guardian Dashboard')}
@@ -88,7 +100,7 @@ function Header() {
               {navLink('/recordings', 'Recordings')}
               {navLink('/books', 'Books')}
               <IconButton color="inherit" onClick={handleBellClick}>
-                <Badge badgeContent={notifications.length} color="error">
+                <Badge badgeContent={unreadCount} color="error">
                   <NotificationsIcon />
                 </Badge>
               </IconButton>
@@ -99,16 +111,16 @@ function Header() {
           )}
         </Toolbar>
       </AppBar>
-      {/* Notifications dropdown */}
       <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-        {notifications.length === 0 && (
-          <MenuItem onClick={handleMenuClose}>No new notifications</MenuItem>
+        {Array.isArray(notifications) && notifications.length > 0 ? (
+          notifications.map((n) => (
+            <MenuItem key={n.id} onClick={() => handleMarkRead(n.id)}>
+              {n.message}
+            </MenuItem>
+          ))
+        ) : (
+          <MenuItem onClick={handleMenuClose}>No notifications</MenuItem>
         )}
-        {notifications.map((n) => (
-          <MenuItem key={n.id} onClick={() => handleMarkRead(n.id)}>
-            {n.message}
-          </MenuItem>
-        ))}
       </Menu>
     </>
   );

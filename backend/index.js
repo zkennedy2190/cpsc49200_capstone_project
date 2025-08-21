@@ -7,22 +7,17 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
 const { db, init } = require('./db');
-const { BlobServiceClient } = require('@azure/storage-blob'); // NEW
 
 init(); // create tables if they don't exist
-
-// --- light, safe migrations (no-op if already present) ---
-try { db.prepare('ALTER TABLE recordings ADD COLUMN url TEXT').run(); } catch {}
-try { db.prepare('ALTER TABLE recordings ADD COLUMN guardianId INTEGER').run(); } catch {}
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve local uploads (dev & local fallback)
+/* NEW: serve uploaded files at /uploads/<filename> */
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// JWT secret
+// Pull the JWT secret from the environment; use a fallback only in development
 const JWT_SECRET =
   process.env.JWT_SECRET ||
   (process.env.NODE_ENV !== 'production' ? 'dev_secret' : undefined);
@@ -33,46 +28,14 @@ if (!JWT_SECRET) {
   );
 }
 
-// Ensure local uploads dir (used for dev fallback)
+// Ensure uploads folder exists for audio files
 const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
 }
+const upload = multer({ dest: uploadsDir });
 
-// Multer: use memory storage so we can push the buffer to Azure or disk
-const upload = multer({ storage: multer.memoryStorage() }); // CHANGED
-
-// Azure Blob setup (container default "recordings")
-let blobContainerClient = null;
-(async () => {
-  try {
-    if (process.env.AZURE_STORAGE_CONNECTION_STRING) {
-      const blobService = BlobServiceClient.fromConnectionString(
-        process.env.AZURE_STORAGE_CONNECTION_STRING
-      );
-      const container = process.env.AZURE_BLOB_CONTAINER || 'recordings';
-      blobContainerClient = blobService.getContainerClient(container);
-      await blobContainerClient.createIfNotExists({ access: 'blob' });
-      console.log('Azure Blob container ready:', container);
-    }
-  } catch (e) {
-    console.error('Azure Blob init failed; using local uploads.', e);
-    blobContainerClient = null;
-  }
-})();
-
-// --------------------------------------------------------------------------
-// Helpers
-// --------------------------------------------------------------------------
-
-// Build a public URL for a file stored on local disk
-function buildFileUrl(req, filePath) {
-  const filename = path.basename(filePath);
-  const base = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
-  return `${base}/uploads/${filename}`;
-}
-
-// Auth middleware
+// Middleware to verify JWT and attach user info to req.user
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -82,6 +45,13 @@ function authenticateToken(req, res, next) {
     req.user = user;
     next();
   });
+}
+
+/* Helper to build a public URL for a stored file path */
+function buildFileUrl(req, filePath) {
+  const filename = path.basename(filePath);
+  const base = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+  return `${base}/uploads/${filename}`;
 }
 
 // --------------------------------------------------------------------------
@@ -119,7 +89,7 @@ app.post('/api/login', async (req, res) => {
 });
 
 // --------------------------------------------------------------------------
-// Books
+// Books endpoint
 // --------------------------------------------------------------------------
 
 app.get('/api/books', (req, res) => {
@@ -139,113 +109,64 @@ app.get('/api/books', (req, res) => {
 });
 
 // --------------------------------------------------------------------------
-// Recordings
+// Recording endpoints
 // --------------------------------------------------------------------------
 
-// Upload a recording (volunteers only) -> Azure Blob (prod) or local (dev)
-app.post('/api/upload', authenticateToken, upload.single('audio'), async (req, res) => {
+// Upload a recording (volunteers only)
+app.post('/api/upload', authenticateToken, upload.single('audio'), (req, res) => {
   if (req.user.role !== 'volunteer') {
     return res.status(403).json({ message: 'Only volunteers can upload' });
   }
-  const { parentId, childId, guardianId } = req.body;
+  const { parentId, childId } = req.body;
   if (!req.file || !parentId || !childId) {
     return res.status(400).json({ message: 'Missing required data' });
   }
-
   const timestamp = new Date().toISOString();
-  const blobName = `${Date.now()}-${Math.random().toString(36).slice(2)}.webm`;
-  const mime = req.file.mimetype || 'audio/webm';
+  const result = db.prepare(
+    'INSERT INTO recordings (filePath, parentId, childId, volunteerId, timestamp) VALUES (?, ?, ?, ?, ?)'
+  ).run(req.file.path, parentId, childId, req.user.id, timestamp);
 
-  let publicUrl = null;
-  let storedPath = null;
-
-  try {
-    if (blobContainerClient) {
-      const blockBlob = blobContainerClient.getBlockBlobClient(blobName);
-      await blockBlob.uploadData(req.file.buffer, {
-        blobHTTPHeaders: { blobContentType: mime },
-      });
-      publicUrl = blockBlob.url;
-      storedPath = `blob:${blobName}`;
-    } else {
-      fs.writeFileSync(path.join(uploadsDir, blobName), req.file.buffer);
-      publicUrl = buildFileUrl(req, path.join(uploadsDir, blobName));
-      storedPath = path.join(uploadsDir, blobName);
-    }
-
-    const result = db.prepare(
-      'INSERT INTO recordings (filePath, url, parentId, childId, guardianId, volunteerId, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).run(storedPath, publicUrl, parentId, childId, guardianId || null, req.user.id, timestamp);
-
-    return res.status(201).json({
-      id: result.lastInsertRowid,
-      message: 'Recording uploaded',
-      url: publicUrl,
-      createdAt: timestamp,
-      parentId,
-      childId,
-      guardianId: guardianId || null,
-      volunteerId: req.user.id,
-    });
-  } catch (e) {
-    console.error(e);
-    return res.status(500).json({ message: 'Upload failed' });
-  }
+  /* NEW: return a public URL so the frontend can play immediately */
+  const url = buildFileUrl(req, req.file.path);
+  res.status(201).json({
+    id: result.lastInsertRowid,
+    message: 'Recording uploaded',
+    url,
+    filename: path.basename(req.file.path),
+    createdAt: timestamp,
+    volunteerId: req.user.id,
+    parentId,
+    childId,
+  });
 });
 
-// Role-filtered list with playable URL
+// Get all recordings (authenticated) — include public URL
 app.get('/api/recordings', authenticateToken, (req, res) => {
-  const uid = parseInt(req.user.id, 10);
-  let rows = [];
-  if (req.user.role === 'admin') {
-    rows = db.prepare('SELECT * FROM recordings').all();
-  } else if (req.user.role === 'volunteer') {
-    rows = db.prepare('SELECT * FROM recordings WHERE volunteerId = ?').all(uid);
-  } else if (req.user.role === 'parent') {
-    rows = db.prepare('SELECT * FROM recordings WHERE parentId = ?').all(uid);
-  } else if (req.user.role === 'guardian') {
-    rows = db.prepare('SELECT * FROM recordings WHERE guardianId = ?').all(uid);
-  }
-
+  const rows = db.prepare('SELECT * FROM recordings').all();
   const list = rows.map((r) => ({
     ...r,
-    createdAt: r.timestamp,
-    url: r.url || (r.filePath && !String(r.filePath).startsWith('blob:')
-      ? buildFileUrl(req, r.filePath)
-      : r.url || null),
+    url: buildFileUrl(req, r.filePath),
   }));
   res.json(list);
 });
 
-// Optional: child-scoped list with same visibility rules
+// Get recordings for a specific child (authenticated) — include public URL
 app.get('/api/recordings/:childId', authenticateToken, (req, res) => {
-  const childId = parseInt(req.params.childId, 10);
-  const uid = parseInt(req.user.id, 10);
-  let rows = [];
-  if (req.user.role === 'admin') {
-    rows = db.prepare('SELECT * FROM recordings WHERE childId = ?').all(childId);
-  } else if (req.user.role === 'volunteer') {
-    rows = db.prepare('SELECT * FROM recordings WHERE childId = ? AND volunteerId = ?').all(childId, uid);
-  } else if (req.user.role === 'parent') {
-    rows = db.prepare('SELECT * FROM recordings WHERE childId = ? AND parentId = ?').all(childId, uid);
-  } else if (req.user.role === 'guardian') {
-    rows = db.prepare('SELECT * FROM recordings WHERE childId = ? AND guardianId = ?').all(childId, uid);
-  }
+  const rows = db.prepare('SELECT * FROM recordings WHERE childId = ?').all(req.params.childId);
   const list = rows.map((r) => ({
     ...r,
-    createdAt: r.timestamp,
-    url: r.url || (r.filePath ? buildFileUrl(req, r.filePath) : null),
+    url: buildFileUrl(req, r.filePath),
   }));
   res.json(list);
 });
 
 // --------------------------------------------------------------------------
-// Ratings (optionally allow guardians too)
+// Ratings endpoints
 // --------------------------------------------------------------------------
 
 app.post('/api/ratings', authenticateToken, (req, res) => {
-  if (req.user.role !== 'parent' && req.user.role !== 'guardian') {
-    return res.status(403).json({ message: 'Only parents/guardians can submit ratings' });
+  if (req.user.role !== 'parent') {
+    return res.status(403).json({ message: 'Only parents can submit ratings' });
   }
   const { recording, rating, comment, volunteerId } = req.body;
   if (!recording || !rating) {
@@ -270,7 +191,7 @@ app.get('/api/ratings', authenticateToken, (req, res) => {
 });
 
 // --------------------------------------------------------------------------
-// Scheduling (unchanged)
+// Scheduling endpoints
 // --------------------------------------------------------------------------
 
 app.post('/api/schedules', authenticateToken, (req, res) => {
@@ -340,7 +261,7 @@ app.get('/api/schedules/parent/:id', authenticateToken, (req, res) => {
 });
 
 // --------------------------------------------------------------------------
-// Notifications / Users / Children (unchanged from your file)
+// Notifications endpoints
 // --------------------------------------------------------------------------
 
 app.post('/api/notifications', authenticateToken, (req, res) => {
@@ -369,6 +290,10 @@ app.put('/api/notifications/:id/read', authenticateToken, (req, res) => {
   res.json({ message: 'Notification marked as read' });
 });
 
+// --------------------------------------------------------------------------
+// User management endpoints (admin only)
+// --------------------------------------------------------------------------
+
 app.get('/api/users', authenticateToken, (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Only admins can access users' });
@@ -395,6 +320,10 @@ app.delete('/api/users/:id', authenticateToken, (req, res) => {
   }
   res.json({ message: 'User deleted' });
 });
+
+// --------------------------------------------------------------------------
+// Child endpoints for parent dashboard (unique child IDs)
+// --------------------------------------------------------------------------
 
 app.get('/api/children/:parentId', authenticateToken, (req, res) => {
   if (
